@@ -192,7 +192,7 @@ int main()
 
     // Change this line to connects to real duckduckgo
     // auto bio = my::UniquePtr<BIO>(BIO_new_connect("duckduckgo.com:443"));
-    auto bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"))
+    auto bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"));
     if (bio == nullptr) {
         my::print_errors_and_exit("Error in BIO_new_connect");
     }
