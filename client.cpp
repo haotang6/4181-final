@@ -1,22 +1,16 @@
 #include <memory>
-#include <signal.h>
+#include <stdarg.h>
 #include <stdexcept>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <string>
-#include <unistd.h>
 #include <vector>
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
-
-/*
- * install requirements: sudo apt-get install -y libssl-dev
- * compile: g++ -o server -std=c++14 server.cpp -lssl -lcrypto
- * test with command=-line: curl --cacert server-certificate.pem --resolve duckduckgo.com:8080:127.0.0.1 https://duckduckgo.com:8080/
- */
+#include <openssl/x509v3.h>
 
 namespace my {
 
@@ -128,23 +122,49 @@ std::string receive_http_message(BIO *bio)
     return headers + "\r\n" + body;
 }
 
-void send_http_response(BIO *bio, const std::string& body)
+void send_http_request(BIO *bio, const std::string& line, const std::string& host)
 {
-    std::string response = "HTTP/1.1 200 OK\r\n";
-    response += "Content-Length: " + std::to_string(body.size()) + "\r\n";
-    response += "\r\n";
+    std::string request = line + "\r\n";
+    request += "Host: " + host + "\r\n";
+    request += "\r\n";
 
-    BIO_write(bio, response.data(), response.size());
-    BIO_write(bio, body.data(), body.size());
+    BIO_write(bio, request.data(), request.size());
     BIO_flush(bio);
 }
 
-my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
+SSL *get_ssl(BIO *bio)
 {
-    if (BIO_do_accept(accept_bio) <= 0) {
-        return nullptr;
+    SSL *ssl = nullptr;
+    BIO_get_ssl(bio, &ssl);
+    if (ssl == nullptr) {
+        my::print_errors_and_exit("Error in BIO_get_ssl");
     }
-    return my::UniquePtr<BIO>(BIO_pop(accept_bio));
+    return ssl;
+}
+
+void verify_the_certificate(SSL *ssl, const std::string& expected_hostname)
+{
+    int err = SSL_get_verify_result(ssl);
+    if (err != X509_V_OK) {
+        const char *message = X509_verify_cert_error_string(err);
+        fprintf(stderr, "Certificate verification error: %s (%d)\n", message, err);
+        exit(1);
+    }
+    X509 *cert = SSL_get_peer_certificate(ssl);
+    if (cert == nullptr) {
+        fprintf(stderr, "No certificate was presented by the server\n");
+        exit(1);
+    }
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    if (X509_check_host(cert, expected_hostname.data(), expected_hostname.size(), 0, nullptr) != 1) {
+        fprintf(stderr, "Certificate verification error: X509_check_host\n");
+        exit(1);
+    }
+#else
+    // X509_check_host is called automatically during verification,
+    // because we set it up in main().
+    (void)expected_hostname;
+#endif
 }
 
 } // namespace my
@@ -154,41 +174,44 @@ int main()
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     SSL_library_init();
     SSL_load_error_strings();
-    auto ctx = my::UniquePtr<SSL_CTX>(SSL_CTX_new(SSLv23_method()));
-#else
-    auto ctx = my::UniquePtr<SSL_CTX>(SSL_CTX_new(TLS_method()));
-    SSL_CTX_set_min_proto_version(ctx.get(), TLS1_2_VERSION);
 #endif
 
-    if (SSL_CTX_use_certificate_file(ctx.get(), "server-certificate.pem", SSL_FILETYPE_PEM) <= 0) {
-        my::print_errors_and_exit("Error loading server certificate");
-    }
-    if (SSL_CTX_use_PrivateKey_file(ctx.get(), "server-private-key.pem", SSL_FILETYPE_PEM) <= 0) {
-        my::print_errors_and_exit("Error loading server private key");
+    /* Set up the SSL context */
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    auto ctx = my::UniquePtr<SSL_CTX>(SSL_CTX_new(SSLv23_client_method()));
+#else
+    auto ctx = my::UniquePtr<SSL_CTX>(SSL_CTX_new(TLS_client_method()));
+#endif
+    
+    // edit this to trust a local certificate
+    // if (SSL_CTX_set_default_verify_paths(ctx.get()) != 1) {
+    if (SSL_CTX_load_verify_locations(ctx.get(), "server-certificate.pem", nullptr) != 1) {
+        my::print_errors_and_exit("Error setting up trust store");
     }
 
-    auto accept_bio = my::UniquePtr<BIO>(BIO_new_accept("8080"));
-    if (BIO_do_accept(accept_bio.get()) <= 0) {
-        my::print_errors_and_exit("Error in BIO_do_accept (binding to port 8080)");
+    // Change this line to connects to real duckduckgo
+    // auto bio = my::UniquePtr<BIO>(BIO_new_connect("duckduckgo.com:443"));
+    auto bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"))
+    if (bio == nullptr) {
+        my::print_errors_and_exit("Error in BIO_new_connect");
     }
-
-    static auto shutdown_the_socket = [fd = BIO_get_fd(accept_bio.get(), nullptr)]() {
-        close(fd);
-    };
-    signal(SIGINT, [](int) { shutdown_the_socket(); });
-
-    while (auto bio = my::accept_new_tcp_connection(accept_bio.get())) {
-        bio = std::move(bio)
-            | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 0))
-            ;
-        try {
-            std::string request = my::receive_http_message(bio.get());
-            printf("Got request:\n");
-            printf("%s\n", request.c_str());
-            my::send_http_response(bio.get(), "okay cool\n");
-        } catch (const std::exception& ex) {
-            printf("Worker exited with exception:\n%s\n", ex.what());
-        }
+    if (BIO_do_connect(bio.get()) <= 0) {
+        my::print_errors_and_exit("Error in BIO_do_connect");
     }
-    printf("\nClean exit!\n");
+    auto ssl_bio = std::move(bio)
+        | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
+        ;
+    SSL_set_tlsext_host_name(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+    SSL_set1_host(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+#endif
+    if (BIO_do_handshake(ssl_bio.get()) <= 0) {
+        my::print_errors_and_exit("Error in BIO_do_handshake");
+    }
+    my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+
+    my::send_http_request(ssl_bio.get(), "GET / HTTP/1.1", "duckduckgo.com");
+    std::string response = my::receive_http_message(ssl_bio.get());
+    printf("%s", response.c_str());
 }
