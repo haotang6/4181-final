@@ -136,13 +136,13 @@ namespace my {
     void send_getcert_request(BIO *bio, const std::string& username, const std::string& password)
     {
         std::string fields = "type=getcert&username=" + username + "&password=" + password;
-        std::string request = "POST / HTTP/1.1\n";
-        request += "Host: duckduckgo.com\n";
-        request += "Content-Type: application/x-www-form-urlencoded\n";
-        request += "Content-Length: " + std::to_string(fields.size()) + "\n";
-        request += "\n";
-        request += fields + "\n";
-        request += "\n";
+        std::string request = "POST / HTTP/1.1\r\n";
+        request += "Host: duckduckgo.com\r\n";
+        request += "Content-Type: application/x-www-form-urlencoded\r\n";
+        request += "Content-Length: " + std::to_string(fields.size()) + "\r\n";
+        request += "\r\n";
+        request += fields + "\r\n";
+        request += "\r\n";
 
         std::cout << request << std::endl;
 
