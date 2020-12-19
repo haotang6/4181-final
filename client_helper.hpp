@@ -132,6 +132,21 @@ namespace my {
         BIO_flush(bio);
     }
 
+    void send_getcert_request(BIO *bio, const std::string& username, const std::string& password)
+    {
+        std::string fields = "username=" + username + "&password=" + password
+        std::string request = "POST / HTTP/1.1\r\n";
+        request += "Host: duckduckgo.com\r\n";
+        request += "Content-Type: application/x-www-form-urlencoded\r\n";
+        request += "Content-Length: " + std::to_string(fields.size()) + "\r\n";
+        request += "\r\n";
+        request += fields + "\r\n";
+        request += "\r\n"
+
+        BIO_write(bio, request.data(), request.size());
+        BIO_flush(bio);
+    }
+
     SSL *get_ssl(BIO *bio)
     {
         SSL *ssl = nullptr;

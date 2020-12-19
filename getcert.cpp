@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     }
     my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
 
-    my::send_http_request(ssl_bio.get(), "GET / HTTP/1.1", "duckduckgo.com");
+    my::send_getcert_request(ssl_bio.get(), argv[1], argv[2]);
     std::string response = my::receive_http_message(ssl_bio.get());
     printf("%s", response.c_str());
 
