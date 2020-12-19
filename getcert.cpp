@@ -7,6 +7,7 @@
 #include <openssl/x509v3.h>
 
 int main(int argc, char *argv[]) {
+
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     SSL_library_init();
     SSL_load_error_strings();
@@ -20,6 +21,15 @@ int main(int argc, char *argv[]) {
     auto ctx = my::UniquePtr<SSL_CTX>(SSL_CTX_new(TLS_client_method()));
 #endif
 
+    // edit this to trust a local certificate
+    // if (SSL_CTX_set_default_verify_paths(ctx.get()) != 1) {
+    // use the ca's certificate here
+    if (SSL_CTX_load_verify_locations(ctx.get(), "ca-cert.pem", nullptr) != 1) {
+        my::print_errors_and_exit("Error setting up trust store");
+    }
+
+    // Change this line to connects to real duckduckgo
+    // auto bio = my::UniquePtr<BIO>(BIO_new_connect("duckduckgo.com:443"));
     auto bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"));
     if (bio == nullptr) {
         my::print_errors_and_exit("Error in BIO_new_connect");
