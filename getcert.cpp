@@ -20,8 +20,28 @@ int main(int argc, char *argv[]) {
     auto ctx = my::UniquePtr<SSL_CTX>(SSL_CTX_new(TLS_client_method()));
 #endif
 
-    // format request to server
+    auto bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"));
+    if (bio == nullptr) {
+        my::print_errors_and_exit("Error in BIO_new_connect");
+    }
+    if (BIO_do_connect(bio.get()) <= 0) {
+        my::print_errors_and_exit("Error in BIO_do_connect");
+    }
+    auto ssl_bio = std::move(bio)
+                   | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
+    ;
+    SSL_set_tlsext_host_name(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+    SSL_set1_host(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+#endif
+    if (BIO_do_handshake(ssl_bio.get()) <= 0) {
+        my::print_errors_and_exit("Error in BIO_do_handshake");
+    }
+    my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+
     my::send_http_request(ssl_bio.get(), "GET / HTTP/1.1", "duckduckgo.com");
+    std::string response = my::receive_http_message(ssl_bio.get());
+    printf("%s", response.c_str());
 
 }
 
