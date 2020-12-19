@@ -156,7 +156,7 @@ std::vector<std::string> splitStringBy(std::string s, std::string delimiter) {
     std::string unparsed = s;
     size_t pos = 0;
     std::string token;
-    while ((pos = unparsedRequest.find(delimiter)) != std::string::npos) {
+    while ((pos = unparsed.find(delimiter)) != std::string::npos) {
         token = s.substr(0, pos);
         splitted.push_back(token);
         unparsed.erase(0, pos + delimiter.length());
