@@ -211,7 +211,7 @@ int main()
                 paramMap[kv[0]] = kv[1];
             }
 
-            for(auto it = myMap.cbegin(); it != myMap.cend(); ++it)
+            for(auto it = paramMap.cbegin(); it != paramMap.cend(); ++it)
             {
                 std::cout << it->first << " " << it->second << "\n";
             }
