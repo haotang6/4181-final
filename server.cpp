@@ -211,9 +211,11 @@ int main()
                 paramMap[kv[0]] = kv[1];
             }
 
-            for(auto it = paramMap.cbegin(); it != paramMap.cend(); ++it)
-            {
-                std::cout << it->first << " " << it->second << "\n";
+            if (paramMap["type"].compare("getcert") == 0) {
+                std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
+
+            } else if (paramMap["type"].compare("changepw") == 0) {
+                std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
             }
 
             my::send_http_response(bio.get(), "okay cool\n");
