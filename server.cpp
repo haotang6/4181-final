@@ -209,11 +209,7 @@ int main()
                 std::vector<std::string> kv = splitStringBy(params[i], "=");
                 paramMap[kv[0]] = kv[1];
             }
-
-            for(auto it = paramMap.cbegin(); it != paramMap.cend(); ++it)
-            {
-                std::cout << it->first << " " << it->second << "\n";
-            }
+            
 
             my::send_http_response(bio.get(), "okay cool\n");
         } catch (const std::exception& ex) {
