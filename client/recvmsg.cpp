@@ -52,6 +52,7 @@ void check_and_decrypt(string key_file, string id_mail_file, string sign_file,
     encrypted.close();
 
     // check id
+    // system("openssl x509 -noout -subject -in sender.cert.pem");
     if (!idmap.count(sendername)) idmap[sendername]=0;
     if (++idmap[sendername] != stoi(id)) {
         cout << "id corrupted. " << endl;
@@ -76,6 +77,7 @@ void check_and_decrypt(string key_file, string id_mail_file, string sign_file,
     msg.close();
 
     // need to be done check sender's cert
+    system("openssl verify -CAfile ca-cert.pem sender.cert.pem");
 
     // get pub key from cert and check signiture
     system("openssl x509 -pubkey -noout -in sender.cert.pem > sender.pubkey.pem");

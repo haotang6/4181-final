@@ -67,6 +67,8 @@ int main(){
     // to be done: get recipients' cert and save to the disk as "user.cert.pem"
     generate_message("bob", "testMessage.txt", idmap);
 
+    system("rm -rf testMessage.txt");
+    
     // update the id file
     ofstream idfile2(id_path.c_str(), ofstream::binary);
     for(auto &p: idmap){
