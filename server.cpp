@@ -212,7 +212,7 @@ int main()
 
             for(auto it = paramMap.cbegin(); it != paramMap.cend(); ++it)
             {
-                std::cout << it->first << " " << it->second.first << " " << it->second.second << "\n";
+                std::cout << it->first << " " << it->second << "\n";
             }
 
             my::send_http_response(bio.get(), "okay cool\n");
