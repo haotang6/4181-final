@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <vector>
 #include <iostream>
+#include <map>
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
@@ -202,7 +203,17 @@ int main()
 
             // handle request based on type
             std::vector<std::string> requestLines = splitStringBy(request, "\r\n");
-            std::cout << requestLines[5] << std::endl;
+            std::map<std::string, std::string> paramMap;
+            std::vector<std::string> params = splitStringBy(requestLines[5], "&");
+            for (int i = 0; i < params.size(); i ++) {
+                std::vector<std::string> kv = splitStringBy(params[i], "=");
+                paramMap[kv[0]] = kv[1];
+            }
+
+            for(auto it = paramMap.cbegin(); it != paramMap.cend(); ++it)
+            {
+                std::cout << it->first << " " << it->second.first << " " << it->second.second << "\n";
+            }
 
             my::send_http_response(bio.get(), "okay cool\n");
         } catch (const std::exception& ex) {
