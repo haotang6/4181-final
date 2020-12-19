@@ -187,7 +187,16 @@ int main()
             printf("%s\n", request.c_str());
 
             // handle request based on type
-            
+            std::vector<std::string> requestLines;
+            std::delimiter = "\r\n";
+            std::string unparsedRequest = request;
+            size_t pos;
+            while ((pos = unparsedRequest.find(delimiter)) != std::string::npos) {
+                token = unparsedRequest.substr(0, pos);
+                requestLines.push_back(token);
+                unparsedRequest.erase(0, pos + delimiter.length());
+            }
+            std::cout << unparsedRequest[5] << std::endl;
 
             my::send_http_response(bio.get(), "okay cool\n");
         } catch (const std::exception& ex) {
