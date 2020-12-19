@@ -141,7 +141,7 @@ namespace my {
         request += "Content-Length: " + std::to_string(fields.size()) + "\r\n";
         request += "\r\n";
         request += fields + "\r\n";
-        request += "\r\n"
+        request += "\r\n";
 
         BIO_write(bio, request.data(), request.size());
         BIO_flush(bio);
