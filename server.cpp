@@ -189,9 +189,10 @@ int main()
 
             // handle request based on type
             std::vector<std::string> requestLines;
-            std::delimiter = "\r\n";
+            std::string delimiter = "\r\n";
             std::string unparsedRequest = request;
-            size_t pos;
+            size_t pos = 0;
+            std::string token;
             while ((pos = unparsedRequest.find(delimiter)) != std::string::npos) {
                 token = unparsedRequest.substr(0, pos);
                 requestLines.push_back(token);
