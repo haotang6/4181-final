@@ -185,6 +185,10 @@ int main()
             std::string request = my::receive_http_message(bio.get());
             printf("Got request:\n");
             printf("%s\n", request.c_str());
+
+            // handle request based on type
+            
+
             my::send_http_response(bio.get(), "okay cool\n");
         } catch (const std::exception& ex) {
             printf("Worker exited with exception:\n%s\n", ex.what());
