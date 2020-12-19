@@ -5,6 +5,7 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
+#include <string>
 
 int main(int argc, char *argv[]) {
 
@@ -49,7 +50,9 @@ int main(int argc, char *argv[]) {
     }
     my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
 
-    my::send_getcert_request(ssl_bio.get(), argv[1], argv[2]);
+    std::string username(argv[1]);
+    std::string password(argv[2]);
+    my::send_getcert_request(ssl_bio.get(), username, password);
     std::string response = my::receive_http_message(ssl_bio.get());
     printf("%s", response.c_str());
 
