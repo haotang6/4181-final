@@ -6,6 +6,7 @@
 #include <string.h>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
