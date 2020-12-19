@@ -150,6 +150,20 @@ my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
 
 } // namespace my
 
+std::vector<std::string> splitStringBy(std::string s, std::delimiter) {
+    std::vector<std::string> splitted;
+    std::string delimiter = "\r\n";
+    std::string unparsed = s;
+    size_t pos = 0;
+    std::string token;
+    while ((pos = unparsedRequest.find(delimiter)) != std::string::npos) {
+        token = s.substr(0, pos);
+        splitted.push_back(token);
+        unparsed.erase(0, pos + delimiter.length());
+    }
+    return splitted;
+}
+
 int main()
 {
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -188,16 +202,7 @@ int main()
             printf("%s\n", request.c_str());
 
             // handle request based on type
-            std::vector<std::string> requestLines;
-            std::string delimiter = "\r\n";
-            std::string unparsedRequest = request;
-            size_t pos = 0;
-            std::string token;
-            while ((pos = unparsedRequest.find(delimiter)) != std::string::npos) {
-                token = unparsedRequest.substr(0, pos);
-                requestLines.push_back(token);
-                unparsedRequest.erase(0, pos + delimiter.length());
-            }
+            std::vector<std::string> requestLines = splitStringBy(request, "\r\n");
             std::cout << requestLines[5] << std::endl;
 
             my::send_http_response(bio.get(), "okay cool\n");
