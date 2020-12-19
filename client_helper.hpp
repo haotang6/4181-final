@@ -143,6 +143,8 @@ namespace my {
         request += fields + "\r\n";
         request += "\r\n";
 
+        std::cout << request << std::endl;
+
         BIO_write(bio, request.data(), request.size());
         BIO_flush(bio);
     }
