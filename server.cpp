@@ -7,6 +7,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <iostream>
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
