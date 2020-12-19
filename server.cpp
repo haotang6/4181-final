@@ -161,6 +161,7 @@ std::vector<std::string> splitStringBy(std::string s, std::string delimiter) {
         splitted.push_back(token);
         unparsed.erase(0, pos + delimiter.length());
     }
+    splitted.push_back(unparsed);
     return splitted;
 }
 
@@ -206,10 +207,14 @@ int main()
             std::map<std::string, std::string> paramMap;
             std::vector<std::string> params = splitStringBy(requestLines[5], "&");
             for (int i = 0; i < params.size(); i ++) {
-                std::vector<std::string> kv = splitStringBy(params[i], "=");
+                std::vector <std::string> kv = splitStringBy(params[i], "=");
                 paramMap[kv[0]] = kv[1];
             }
-            
+
+            for(auto it = myMap.cbegin(); it != myMap.cend(); ++it)
+            {
+                std::cout << it->first << " " << it->second << "\n";
+            }
 
             my::send_http_response(bio.get(), "okay cool\n");
         } catch (const std::exception& ex) {
