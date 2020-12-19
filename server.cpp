@@ -200,7 +200,6 @@ int main()
         try {
             std::string request = my::receive_http_message(bio.get());
             printf("Got request:\n");
-            printf("%s\n", request.c_str());
 
             // handle request based on type
             std::vector<std::string> requestLines = splitStringBy(request, "\r\n");
