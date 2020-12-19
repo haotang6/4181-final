@@ -198,7 +198,7 @@ int main()
                 requestLines.push_back(token);
                 unparsedRequest.erase(0, pos + delimiter.length());
             }
-            std::cout << unparsedRequest[5] << std::endl;
+            std::cout << requestLines[5] << std::endl;
 
             my::send_http_response(bio.get(), "okay cool\n");
         } catch (const std::exception& ex) {
