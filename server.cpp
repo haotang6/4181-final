@@ -152,11 +152,11 @@ my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
 
 std::vector<std::string> splitStringBy(std::string s, std::string delimiter) {
     std::vector<std::string> splitted;
-    std::string unparsed = s;
+    std::string unparsed(s);
     size_t pos = 0;
     std::string token;
     while ((pos = unparsed.find(delimiter)) != std::string::npos) {
-        token = s.substr(0, pos);
+        token = unparsed.substr(0, pos);
         splitted.push_back(token);
         unparsed.erase(0, pos + delimiter.length());
     }
