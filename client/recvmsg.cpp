@@ -70,7 +70,7 @@ void check_and_decrypt(string key_file, string id_mail_file, string sign_file,
     msg.close();
 
     // check sender's cert
-    if (exec("openssl verify -CAfile ca-cert.pem temp.sender.cert.pem") != "temp.sender.cert.pem: OK") {
+    if (exec("openssl verify -CAfile ca-chain.cert.pem temp.sender.cert.pem") != "temp.sender.cert.pem: OK") {
         cout << "Sender's certificate is not verified" << endl;
         return;
     }

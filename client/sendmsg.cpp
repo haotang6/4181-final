@@ -171,7 +171,7 @@ int main(){
     // edit this to trust a local certificate
     // if (SSL_CTX_set_default_verify_paths(ctx.get()) != 1) {
     // use the ca's certificate here
-    if (SSL_CTX_load_verify_locations(ctx.get(), "ca-cert.pem", nullptr) != 1) {
+    if (SSL_CTX_load_verify_locations(ctx.get(), "ca-chain.cert.pem", nullptr) != 1) {
         my::print_errors_and_exit("Error setting up trust store");
     }
 

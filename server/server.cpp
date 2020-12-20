@@ -19,7 +19,7 @@
 /*
  * install requirements: sudo apt-get install -y libssl-dev
  * compile: g++ -o server -std=c++14 server.cpp -lssl -lcrypto
- * test with command=-line: curl --cacert server-certificate.pem --resolve duckduckgo.com:8080:127.0.0.1 https://duckduckgo.com:8080/
+ * test with command=-line: curl --cacert mailserver.cert.pem --resolve duckduckgo.com:8080:127.0.0.1 https://duckduckgo.com:8080/
  */
 
 namespace my {
@@ -213,10 +213,10 @@ int main()
     SSL_CTX_set_min_proto_version(ctx.get(), TLS1_2_VERSION);
 #endif
 
-    if (SSL_CTX_use_certificate_file(ctx.get(), "server-certificate.pem", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_certificate_file(ctx.get(), "mailserver.cert.pem", SSL_FILETYPE_PEM) <= 0) {
         my::print_errors_and_exit("Error loading server certificate");
     }
-    if (SSL_CTX_use_PrivateKey_file(ctx.get(), "server-private-key.pem", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_PrivateKey_file(ctx.get(), "mailserver.key.pem", SSL_FILETYPE_PEM) <= 0) {
         my::print_errors_and_exit("Error loading server private key");
     }
 
