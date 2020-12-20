@@ -1,6 +1,6 @@
 all: CAserver
 
-server: CAserver.cpp
+CAserver: CAserver.cpp
 	g++ -o CAserver -std=c++14 CAserver.cpp -lssl -lcrypto
 
 clean:
