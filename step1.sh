@@ -153,8 +153,8 @@ chmod 444 certs/ca.cert.pem
 openssl x509 -noout -text -in certs/ca.cert.pem
 
 # intermediate CA
-mkdir $root/intermediate
-cd $root/intermediate
+mkdir intermediate
+cd intermediate
 # intermediate CA conf
 echo -n '# OpenSSL intermediate CA configuration file.
 # Copy to `$root/intermediate/openssl.cnf`.
