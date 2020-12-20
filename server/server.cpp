@@ -81,6 +81,16 @@ public:
     throw std::runtime_error(std::string(message) + "\n" + std::move(bio).str());
 }
 
+SSL *get_ssl(BIO *bio)
+{
+    SSL *ssl = nullptr;
+    BIO_get_ssl(bio, &ssl);
+    if (ssl == nullptr) {
+        my::print_errors_and_exit("Error in BIO_get_ssl");
+    }
+    return ssl;
+}
+
 std::string receive_some_data(BIO *bio)
 {
     char buffer[1024];
