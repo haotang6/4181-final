@@ -152,6 +152,18 @@ namespace my {
         return password_db;
     }
 
+    void save_password_database(std::map<std::string, std::string> password_db)
+    {
+        std::ofstream out("~/ca/user_passwords");
+        for (auto const& x: password_db) {
+            out << x.first;
+            out << " ";
+            out << x.second;
+            out << "\n";
+        }
+        out.close();
+    }
+
     my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
     {
         if (BIO_do_accept(accept_bio) <= 0) {
@@ -213,8 +225,23 @@ int main()
         try {
             std::string request = my::receive_http_message(bio.get());
             printf("Got request:\n");
-            printf("%s\n", request.c_str());
-            my::send_http_response(bio.get(), "okay cool\n");
+            std::map<std::string, std::string> paramMap;
+            std::vector<std::string> params = splitStringBy(requestLines[5], "&");
+            for (int i = 0; i < params.size(); i ++) {
+                std::vector <std::string> kv = splitStringBy(params[i], "=");
+                paramMap[kv[0]] = kv[1];
+            }
+
+            if (paramMap["type"].compare("getcert") == 0) {
+                std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
+                if (paramMap.find(paramMap["username"]) != paramMap.end()) {
+                    my::send_http_response(bio.get(), "user already in system.\n");
+                } else {
+
+                }
+            } else {
+                my::send_http_response(bio.get(), "unimplemented request type\n");
+            }
         } catch (const std::exception& ex) {
             printf("Worker exited with exception:\n%s\n", ex.what());
         }
