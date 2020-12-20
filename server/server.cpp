@@ -143,45 +143,6 @@ void send_http_response(BIO *bio, const std::string& body)
     BIO_flush(bio);
 }
 
-void send_getcert_request_CA(std::string username, std::string password)
-{
-    auto bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:10086"));
-    if (bio == nullptr) {
-        my::print_errors_and_exit("Error in BIO_new_connect");
-    }
-    if (BIO_do_connect(bio.get()) <= 0) {
-        my::print_errors_and_exit("Error in BIO_do_connect");
-    }
-    auto ssl_bio = std::move(bio)
-                   | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
-    ;
-    SSL_set_tlsext_host_name(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-    SSL_set1_host(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
-#endif
-    if (BIO_do_handshake(ssl_bio.get()) <= 0) {
-        my::print_errors_and_exit("Error in BIO_do_handshake");
-    }
-    my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
-
-    std::string username(argv[1]);
-    std::string password(argv[2]);
-
-    std::string fields = "type=getcert&username=" + username + "&password=" + password;
-    std::string request = "POST / HTTP/1.1\r\n";
-    request += "Host: duckduckgo.com\r\n";
-    request += "Content-Type: application/x-www-form-urlencoded\r\n";
-    request += "Content-Length: " + std::to_string(fields.size()) + "\r\n";
-    request += "\r\n";
-    request += fields + "\r\n";
-    request += "\r\n";
-    BIO_write(ssl_bio.get(), request.data(), request.size());
-    BIO_flush(ssl_bio.get());
-
-    std::string response = my::receive_http_message(ssl_bio.get());
-    printf("%s", response.c_str());
-}
-
 my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
 {
     if (BIO_do_accept(accept_bio) <= 0) {
@@ -254,7 +215,40 @@ int main()
 
             if (paramMap["type"].compare("getcert") == 0) {
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
-                my::send_getcert_request_CA(paramMap["username"], paramMap["password"]);
+                std::string username = paramMap["username"];
+                std::string password = paramMap["password"];
+                auto bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:10086"));
+                if (bio == nullptr) {
+                    my::print_errors_and_exit("Error in BIO_new_connect");
+                }
+                if (BIO_do_connect(bio.get()) <= 0) {
+                    my::print_errors_and_exit("Error in BIO_do_connect");
+                }
+                auto ssl_bio = std::move(bio)
+                               | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
+                ;
+                SSL_set_tlsext_host_name(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+                if (BIO_do_handshake(ssl_bio.get()) <= 0) {
+                    my::print_errors_and_exit("Error in BIO_do_handshake");
+                }
+                my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+
+                std::string username(argv[1]);
+                std::string password(argv[2]);
+
+                std::string fields = "type=getcert&username=" + username + "&password=" + password;
+                std::string request = "POST / HTTP/1.1\r\n";
+                request += "Host: duckduckgo.com\r\n";
+                request += "Content-Type: application/x-www-form-urlencoded\r\n";
+                request += "Content-Length: " + std::to_string(fields.size()) + "\r\n";
+                request += "\r\n";
+                request += fields + "\r\n";
+                request += "\r\n";
+                BIO_write(ssl_bio.get(), request.data(), request.size());
+                BIO_flush(ssl_bio.get());
+
+                std::string response = my::receive_http_message(ssl_bio.get());
+                printf("%s", response.c_str());
                 my::send_http_response(bio.get(), "okay cool\n");
             } else if (paramMap["type"].compare("changepw") == 0) {
                 std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
