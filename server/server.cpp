@@ -252,21 +252,21 @@ int main()
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
                 std::string username = paramMap["username"];
                 std::string password = paramMap["password"];
-                auto bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:10086"));
-                if (bio == nullptr) {
+                auto CAbio = my::UniquePtr<BIO>(BIO_new_connect("localhost:10086"));
+                if (CAbio == nullptr) {
                     my::print_errors_and_exit("Error in BIO_new_connect");
                 }
-                if (BIO_do_connect(bio.get()) <= 0) {
+                if (BIO_do_connect(CAbio.get()) <= 0) {
                     my::print_errors_and_exit("Error in BIO_do_connect");
                 }
-                auto ssl_bio = std::move(bio)
+                auto CAssl_bio = std::move(CAbio)
                                | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
                 ;
-                SSL_set_tlsext_host_name(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
-                if (BIO_do_handshake(ssl_bio.get()) <= 0) {
+                SSL_set_tlsext_host_name(my::get_ssl(CAssl_bio.get()), "duckduckgo.com");
+                if (BIO_do_handshake(CAssl_bio.get()) <= 0) {
                     my::print_errors_and_exit("Error in BIO_do_handshake");
                 }
-                my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+                my::verify_the_certificate(my::get_ssl(CAssl_bio.get()), "duckduckgo.com");
 
                 std::string fields = "type=getcert&username=" + username + "&password=" + password;
                 std::string request = "POST / HTTP/1.1\r\n";
@@ -276,10 +276,10 @@ int main()
                 request += "\r\n";
                 request += fields + "\r\n";
                 request += "\r\n";
-                BIO_write(ssl_bio.get(), request.data(), request.size());
-                BIO_flush(ssl_bio.get());
+                BIO_write(CAssl_bio.get(), request.data(), request.size());
+                BIO_flush(CAssl_bio.get());
 
-                std::string response = my::receive_http_message(ssl_bio.get());
+                std::string response = my::receive_http_message(CAssl_bio.get());
                 printf("%s", response.c_str());
                 my::send_http_response(bio.get(), "okay cool\n");
             } else if (paramMap["type"].compare("changepw") == 0) {
