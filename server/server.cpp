@@ -19,7 +19,7 @@
 /*
  * install requirements: sudo apt-get install -y libssl-dev
  * compile: g++ -o server -std=c++14 server.cpp -lssl -lcrypto
- * test with command=-line: curl --cacert server-certificate.pem --resolve duckduckgo.com:8080:127.0.0.1 https://duckduckgo.com:8080/
+ * test with command=-line: curl --cacert mailserver.cert.pem --resolve duckduckgo.com:8080:127.0.0.1 https://duckduckgo.com:8080/
  */
 
 namespace my {
@@ -79,6 +79,16 @@ public:
     my::StringBIO bio;
     ERR_print_errors(bio.bio());
     throw std::runtime_error(std::string(message) + "\n" + std::move(bio).str());
+}
+
+SSL *get_ssl(BIO *bio)
+{
+    SSL *ssl = nullptr;
+    BIO_get_ssl(bio, &ssl);
+    if (ssl == nullptr) {
+        my::print_errors_and_exit("Error in BIO_get_ssl");
+    }
+    return ssl;
 }
 
 std::string receive_some_data(BIO *bio)
@@ -143,6 +153,31 @@ void send_http_response(BIO *bio, const std::string& body)
     BIO_flush(bio);
 }
 
+void verify_the_certificate(SSL *ssl, const std::string& expected_hostname)
+{
+    int err = SSL_get_verify_result(ssl);
+    if (err != X509_V_OK) {
+        const char *message = X509_verify_cert_error_string(err);
+        fprintf(stderr, "Certificate verification error: %s (%d)\n", message, err);
+        exit(1);
+    }
+    X509 *cert = SSL_get_peer_certificate(ssl);
+    if (cert == nullptr) {
+        fprintf(stderr, "No certificate was presented by the server\n");
+        exit(1);
+    }
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    if (X509_check_host(cert, expected_hostname.data(), expected_hostname.size(), 0, nullptr) != 1) {
+        fprintf(stderr, "Certificate verification error: X509_check_host\n");
+        exit(1);
+    }
+#else
+    // X509_check_host is called automatically during verification,
+    // because we set it up in main().
+    (void)expected_hostname;
+#endif
+}
+
 my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
 {
     if (BIO_do_accept(accept_bio) <= 0) {
@@ -178,10 +213,10 @@ int main()
     SSL_CTX_set_min_proto_version(ctx.get(), TLS1_2_VERSION);
 #endif
 
-    if (SSL_CTX_use_certificate_file(ctx.get(), "server-certificate.pem", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_certificate_file(ctx.get(), "mailserver.cert.pem", SSL_FILETYPE_PEM) <= 0) {
         my::print_errors_and_exit("Error loading server certificate");
     }
-    if (SSL_CTX_use_PrivateKey_file(ctx.get(), "server-private-key.pem", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_PrivateKey_file(ctx.get(), "mailserver.key.pem", SSL_FILETYPE_PEM) <= 0) {
         my::print_errors_and_exit("Error loading server private key");
     }
 
@@ -215,6 +250,37 @@ int main()
 
             if (paramMap["type"].compare("getcert") == 0) {
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
+                std::string username = paramMap["username"];
+                std::string password = paramMap["password"];
+                auto CAbio = my::UniquePtr<BIO>(BIO_new_connect("localhost:10086"));
+                if (CAbio == nullptr) {
+                    my::print_errors_and_exit("Error in BIO_new_connect");
+                }
+                if (BIO_do_connect(CAbio.get()) <= 0) {
+                    my::print_errors_and_exit("Error in BIO_do_connect");
+                }
+                auto CAssl_bio = std::move(CAbio)
+                               | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
+                ;
+                SSL_set_tlsext_host_name(my::get_ssl(CAssl_bio.get()), "duckduckgo.com");
+                if (BIO_do_handshake(CAssl_bio.get()) <= 0) {
+                    my::print_errors_and_exit("Error in BIO_do_handshake");
+                }
+                //my::verify_the_certificate(my::get_ssl(CAssl_bio.get()), "Haotang Ltd Intermediate CA");
+
+                std::string fields = "type=getcert&username=" + username + "&password=" + password;
+                std::string request = "POST / HTTP/1.1\r\n";
+                request += "Host: duckduckgo.com\r\n";
+                request += "Content-Type: application/x-www-form-urlencoded\r\n";
+                request += "Content-Length: " + std::to_string(fields.size()) + "\r\n";
+                request += "\r\n";
+                request += fields + "\r\n";
+                request += "\r\n";
+                BIO_write(CAssl_bio.get(), request.data(), request.size());
+                BIO_flush(CAssl_bio.get());
+
+                std::string response = my::receive_http_message(CAssl_bio.get());
+                printf("%s", response.c_str());
                 my::send_http_response(bio.get(), "okay cool\n");
             } else if (paramMap["type"].compare("changepw") == 0) {
                 std::cout << "changepw request received from user " << paramMap["username"] << std::endl;

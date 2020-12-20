@@ -152,6 +152,18 @@ namespace my {
         return password_db;
     }
 
+    void save_password_database(std::map<std::string, std::string> password_db)
+    {
+        std::ofstream out("~/ca/user_passwords");
+        for (auto const& x: password_db) {
+            out << x.first;
+            out << " ";
+            out << x.second;
+            out << "\n";
+        }
+        out.close();
+    }
+
     my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
     {
         if (BIO_do_accept(accept_bio) <= 0) {
@@ -178,6 +190,9 @@ std::vector<std::string> splitStringBy(std::string s, std::string delimiter) {
 
 int main()
 {
+
+    std::map<std::string, std::string> password_db = my::load_password_database();
+
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     SSL_library_init();
     SSL_load_error_strings();
@@ -187,10 +202,10 @@ int main()
     SSL_CTX_set_min_proto_version(ctx.get(), TLS1_2_VERSION);
 #endif
 
-    if (SSL_CTX_use_certificate_file(ctx.get(), "ca-cert.pem", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_certificate_file(ctx.get(), "caserver.cert.pem", SSL_FILETYPE_PEM) <= 0) {
         my::print_errors_and_exit("Error loading server certificate");
     }
-    if (SSL_CTX_use_PrivateKey_file(ctx.get(), "ca.key.pem", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_PrivateKey_file(ctx.get(), "caserver.key.pem", SSL_FILETYPE_PEM) <= 0) {
         my::print_errors_and_exit("Error loading server private key");
     }
 
@@ -203,9 +218,6 @@ int main()
         close(fd);
     };
     signal(SIGINT, [](int) { shutdown_the_socket(); });
-
-    std::map<std::string, std::string> password_db = my::load_password_database();
-    std::cout << "password data loaded.";
     while (auto bio = my::accept_new_tcp_connection(accept_bio.get())) {
         bio = std::move(bio)
               | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 0))
@@ -213,8 +225,23 @@ int main()
         try {
             std::string request = my::receive_http_message(bio.get());
             printf("Got request:\n");
-            printf("%s\n", request.c_str());
-            my::send_http_response(bio.get(), "okay cool\n");
+            std::map<std::string, std::string> paramMap;
+            std::vector<std::string> params = splitStringBy(requestLines[5], "&");
+            for (int i = 0; i < params.size(); i ++) {
+                std::vector <std::string> kv = splitStringBy(params[i], "=");
+                paramMap[kv[0]] = kv[1];
+            }
+
+            if (paramMap["type"].compare("getcert") == 0) {
+                std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
+                if (paramMap.find(paramMap["username"]) != paramMap.end()) {
+                    my::send_http_response(bio.get(), "user already in system.\n");
+                } else {
+
+                }
+            } else {
+                my::send_http_response(bio.get(), "unimplemented request type\n");
+            }
         } catch (const std::exception& ex) {
             printf("Worker exited with exception:\n%s\n", ex.what());
         }
