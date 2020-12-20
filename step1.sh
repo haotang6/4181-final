@@ -1,12 +1,15 @@
 #!/bin/bash
-rm -rf ~/ca
+
+export root="./ca"
+
+rm -rf $root
 
 # root CA
-mkdir ~/ca
-cd ~/ca
+mkdir $root
+cd $root
 # root CA config file 
 echo -n '# OpenSSL root CA configuration file.
-# Copy to `~/ca/openssl.cnf`.
+# Copy to `$root/openssl.cnf`.
 
 [ ca ]
 # `man ca`
@@ -150,11 +153,11 @@ chmod 444 certs/ca.cert.pem
 openssl x509 -noout -text -in certs/ca.cert.pem
 
 # intermediate CA
-mkdir ~/ca/intermediate
-cd ~/ca/intermediate
+mkdir $root/intermediate
+cd $root/intermediate
 # intermediate CA conf
 echo -n '# OpenSSL intermediate CA configuration file.
-# Copy to `~/ca/intermediate/openssl.cnf`.
+# Copy to `$root/intermediate/openssl.cnf`.
 
 [ ca ]
 # `man ca`
@@ -304,8 +307,8 @@ mkdir certs crl csr newcerts private
 chmod 700 private
 touch index.txt
 echo 1000 > serial
-echo 1000 > ~/ca/intermediate/crlnumber
-cd ~/ca
+echo 1000 > $root/intermediate/crlnumber
+cd $root
 openssl genrsa -aes256 -passout pass:1234\
       -out intermediate/private/intermediate.key.pem 4096
 chmod 400 intermediate/private/intermediate.key.pem
