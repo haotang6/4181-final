@@ -252,6 +252,25 @@ int main()
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
                 std::string username = paramMap["username"];
                 std::string password = paramMap["password"];
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+                SSL_library_init();
+                SSL_load_error_strings();
+#endif
+
+                /* Set up the SSL context */
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+                auto ctx = my::UniquePtr<SSL_CTX>(SSL_CTX_new(SSLv23_client_method()));
+#else
+                auto ctx = my::UniquePtr<SSL_CTX>(SSL_CTX_new(TLS_client_method()));
+#endif
+                
+                // edit this to trust a local certificate
+                // if (SSL_CTX_set_default_verify_paths(ctx.get()) != 1) {
+                // use the ca's certificate here
+                if (SSL_CTX_load_verify_locations(ctx.get(), "ca-chain.cert.pem", nullptr) != 1) {
+                    my::print_errors_and_exit("Error setting up trust store");
+                }
                 auto CAbio = my::UniquePtr<BIO>(BIO_new_connect("localhost:10086"));
                 if (CAbio == nullptr) {
                     my::print_errors_and_exit("Error in BIO_new_connect");
@@ -262,11 +281,11 @@ int main()
                 auto CAssl_bio = std::move(CAbio)
                                | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
                 ;
-                SSL_set_tlsext_host_name(my::get_ssl(CAssl_bio.get()), "duckduckgo.com");
+                SSL_set_tlsext_host_name(my::get_ssl(CAssl_bio.get()), "luckluckgo.com");
                 if (BIO_do_handshake(CAssl_bio.get()) <= 0) {
                     my::print_errors_and_exit("Error in BIO_do_handshake");
                 }
-                //my::verify_the_certificate(my::get_ssl(CAssl_bio.get()), "Haotang Ltd Intermediate CA");
+                my::verify_the_certificate(my::get_ssl(CAssl_bio.get()), "luckluckgo.com");
 
                 std::string fields = "type=getcert&username=" + username + "&password=" + password;
                 std::string request = "POST / HTTP/1.1\r\n";
