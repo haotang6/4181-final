@@ -53,7 +53,7 @@ void check_and_decrypt(string key_file, string id_mail_file, string sign_file,
     encrypted.close();
     
     // decrypt file
-    system("openssl enc -d -pbkdf2 -in temp.mail.enc -out temp.dec -pass file:./temp.key.dec");
+    system("openssl enc -d -des3 -pbkdf2 -in temp.mail.enc -out temp.dec -pass file:./temp.key.dec");
 
     // split decrypted to [cert, msg]
     ifstream decrypted("temp.dec", ifstream::binary);

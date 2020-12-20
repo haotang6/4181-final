@@ -59,12 +59,9 @@ void send_certificate(BIO *bio) {
     BIO_flush(bio);
 }
 
-void send_number_and_recipient(BIO *bio, const string & response, string recipient) {
+void send_number_and_recipient(BIO *bio, const string & number, string recipient) {
     // decrypt number from response
-    get_body_and_store(response, "temp.number");
-    string number = exec("openssl pkeyutl -decrypt -inkey " + key_path + " -in temp.number");
-    remove("temp.number");
-    string fields = "type=sendmsg&step=number&number=" + number + "&recipient=bob";
+    string fields = number + "&bob";
     string request = "POST / HTTP/1.1\r\n";
     request += "Host: duckduckgo.com\r\n";
     request += "Content-Type: text/plain\r\n";
@@ -87,16 +84,15 @@ void send_msg(BIO *bio, string recipient) {
     string sg((std::istreambuf_iterator<char>(f3)), std::istreambuf_iterator<char>());
     f3.close();
 
-    string fields = "type=sendmsg&step=recipient&recipient=" + recipient + "&msg=" 
-                 + keyenc + "\n\n" + idmail + "\n\n" + sg;
+    string fields = keyenc + "\n\n" + idmail + "\n\n" + sg;
     string request = "POST / HTTP/1.1\r\n";
     request += "Host: duckduckgo.com\r\n";
-    request += "Content-Type: text/plain\r\n";
+    request += "Content-Type: application/octet-stream\r\n";
     request += "Content-Length: " + to_string(fields.size()) + "\r\n";
     request += "\r\n";
     request += fields + "\r\n";
     request += "\r\n";
-    cout << request << endl;
+    //cout << request << endl;
     BIO_write(bio, request.data(), request.size());
     BIO_flush(bio);
 }
@@ -201,30 +197,35 @@ int main(){
     my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
 
     send_certificate(ssl_bio.get());
+
     string response = my::receive_http_message(ssl_bio.get());
+
+    get_body_and_store(response, "temp.number");
+    string number = exec("openssl pkeyutl -decrypt -inkey " + key_path + " -in temp.number");
+    remove("temp.number");
 
     /********* establish connection again and send number and recipient ************/
 
-    bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"));
-    if (bio == nullptr) {
-        my::print_errors_and_exit("Error in BIO_new_connect");
-    }
-    if (BIO_do_connect(bio.get()) <= 0) {
-        my::print_errors_and_exit("Error in BIO_do_connect");
-    }
-    ssl_bio = std::move(bio)
-                   | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
-    ;
-    SSL_set_tlsext_host_name(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-    SSL_set1_host(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
-#endif
-    if (BIO_do_handshake(ssl_bio.get()) <= 0) {
-        my::print_errors_and_exit("Error in BIO_do_handshake");
-    }
-    my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+//     bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"));
+//     if (bio == nullptr) {
+//         my::print_errors_and_exit("Error in BIO_new_connect");
+//     }
+//     if (BIO_do_connect(bio.get()) <= 0) {
+//         my::print_errors_and_exit("Error in BIO_do_connect");
+//     }
+//     ssl_bio = std::move(bio)
+//                    | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
+//     ;
+//     SSL_set_tlsext_host_name(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+// #if OPENSSL_VERSION_NUMBER >= 0x10100000L
+//     SSL_set1_host(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+// #endif
+//     if (BIO_do_handshake(ssl_bio.get()) <= 0) {
+//         my::print_errors_and_exit("Error in BIO_do_handshake");
+//     }
+//     my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
 
-    send_number_and_recipient(ssl_bio.get(), response, "bob");
+    send_number_and_recipient(ssl_bio.get(), number, "bob");
     response = my::receive_http_message(ssl_bio.get());
     get_body_and_store(response, "bob.cert.pem");
 
@@ -235,28 +236,28 @@ int main(){
     system("rm -rf testMessage.txt");
     /********* establish connection again and send 3 parts of the message ************/
 
-    bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"));
-    if (bio == nullptr) {
-        my::print_errors_and_exit("Error in BIO_new_connect");
-    }
-    if (BIO_do_connect(bio.get()) <= 0) {
-        my::print_errors_and_exit("Error in BIO_do_connect");
-    }
-    ssl_bio = std::move(bio)
-                   | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
-    ;
-    SSL_set_tlsext_host_name(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-    SSL_set1_host(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
-#endif
-    if (BIO_do_handshake(ssl_bio.get()) <= 0) {
-        my::print_errors_and_exit("Error in BIO_do_handshake");
-    }
-    my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+//     bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"));
+//     if (bio == nullptr) {
+//         my::print_errors_and_exit("Error in BIO_new_connect");
+//     }
+//     if (BIO_do_connect(bio.get()) <= 0) {
+//         my::print_errors_and_exit("Error in BIO_do_connect");
+//     }
+//     ssl_bio = std::move(bio)
+//                    | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
+//     ;
+//     SSL_set_tlsext_host_name(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+// #if OPENSSL_VERSION_NUMBER >= 0x10100000L
+//     SSL_set1_host(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+// #endif
+//     if (BIO_do_handshake(ssl_bio.get()) <= 0) {
+//         my::print_errors_and_exit("Error in BIO_do_handshake");
+//     }
+//     my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
 
     send_msg(ssl_bio.get(), "bob");
-    //response = my::receive_http_message(ssl_bio.get());
-
+    response = my::receive_http_message(ssl_bio.get());
+    cout << response << endl;
     // update the id file
     ofstream idfile2(id_path.c_str(), ofstream::binary);
     for(auto &p: idmap){
