@@ -169,7 +169,7 @@ dir               = ' >> openssl.cnf
 echo -n $root >> openssl.cnf
 
 
-echo '/ca/intermediate
+echo '/intermediate
 certs             = $dir/certs
 crl_dir           = $dir/crl
 new_certs_dir     = $dir/newcerts
