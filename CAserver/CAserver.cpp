@@ -178,6 +178,10 @@ std::vector<std::string> splitStringBy(std::string s, std::string delimiter) {
 
 int main()
 {
+
+    std::map<std::string, std::string> password_db = my::load_password_database();
+    std::cout << "password data loaded.";
+
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     SSL_library_init();
     SSL_load_error_strings();
@@ -203,9 +207,6 @@ int main()
         close(fd);
     };
     signal(SIGINT, [](int) { shutdown_the_socket(); });
-
-    std::map<std::string, std::string> password_db = my::load_password_database();
-    std::cout << "password data loaded.";
     while (auto bio = my::accept_new_tcp_connection(accept_bio.get())) {
         bio = std::move(bio)
               | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 0))
