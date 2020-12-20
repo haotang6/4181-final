@@ -233,9 +233,6 @@ int main()
                 }
                 my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
 
-                std::string username(argv[1]);
-                std::string password(argv[2]);
-
                 std::string fields = "type=getcert&username=" + username + "&password=" + password;
                 std::string request = "POST / HTTP/1.1\r\n";
                 request += "Host: duckduckgo.com\r\n";
