@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <map>
 
 #include <openssl/bio.h>
@@ -135,6 +136,22 @@ namespace my {
         BIO_flush(bio);
     }
 
+    std::map<std::string, std::string> load_password_database()
+    {
+        std::map<std::string, std::string> password_db;
+        std::ifstream in("~/ca/user_passwords");
+        std::string str;
+        while (std::getline(in, str))
+        {
+            if(str.size() > 0)
+            {
+                size_t pos = str.find(" ");
+                password_db[str.substr(0, pos)] = str.substr(pos + 1, str.size() - pos - 1);
+            }
+        }
+        return password_db;
+    }
+
     my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
     {
         if (BIO_do_accept(accept_bio) <= 0) {
@@ -187,6 +204,8 @@ int main()
     };
     signal(SIGINT, [](int) { shutdown_the_socket(); });
 
+    std::map<std::string, std::string> password_db = my::load_password_database();
+    std::cout << "password data loaded."
     while (auto bio = my::accept_new_tcp_connection(accept_bio.get())) {
         bio = std::move(bio)
               | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 0))
