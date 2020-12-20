@@ -170,7 +170,7 @@ namespace my {
     {
         std::array<char, 128> buffer;
         std::string result;
-        std::string command = "mkpasswd --method=sha512crypt --salt=5Q91hyuzJvXqU67r \"" + password + "\""
+        std::string command = "mkpasswd --method=sha512crypt --salt=5Q91hyuzJvXqU67r \"" + password + "\"";
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
         if (!pipe) {
             throw std::runtime_error("popen() failed!");
@@ -242,6 +242,7 @@ int main()
         try {
             std::string request = my::receive_http_message(bio.get());
             printf("Got request:\n");
+            std::vector<std::string> requestLines = splitStringBy(request, "\r\n");
             std::map<std::string, std::string> paramMap;
             std::vector<std::string> params = splitStringBy(requestLines[5], "&");
             for (int i = 0; i < params.size(); i ++) {
@@ -251,12 +252,12 @@ int main()
 
             if (paramMap["type"].compare("getcert") == 0) {
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
-                if (paramMap.find(paramMap["username"]) != paramMap.end()) {
+                if (password_db.find(paramMap["username"]) != password_db.end()) {
                     my::send_http_response(bio.get(), "user already in system.\n");
                 } else {
                     std::string hashedPassword = my::hash_password(paramMap["password"]);
                     std::cout << hashedPassword << std::endl;
-                    my::save_password_database(database);
+                    my::save_password_database(password_db);
                 }
             } else {
                 my::send_http_response(bio.get(), "unimplemented request type\n");
