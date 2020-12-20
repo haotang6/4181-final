@@ -143,6 +143,31 @@ void send_http_response(BIO *bio, const std::string& body)
     BIO_flush(bio);
 }
 
+void verify_the_certificate(SSL *ssl, const std::string& expected_hostname)
+{
+    int err = SSL_get_verify_result(ssl);
+    if (err != X509_V_OK) {
+        const char *message = X509_verify_cert_error_string(err);
+        fprintf(stderr, "Certificate verification error: %s (%d)\n", message, err);
+        exit(1);
+    }
+    X509 *cert = SSL_get_peer_certificate(ssl);
+    if (cert == nullptr) {
+        fprintf(stderr, "No certificate was presented by the server\n");
+        exit(1);
+    }
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    if (X509_check_host(cert, expected_hostname.data(), expected_hostname.size(), 0, nullptr) != 1) {
+        fprintf(stderr, "Certificate verification error: X509_check_host\n");
+        exit(1);
+    }
+#else
+    // X509_check_host is called automatically during verification,
+    // because we set it up in main().
+    (void)expected_hostname;
+#endif
+}
+
 my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
 {
     if (BIO_do_accept(accept_bio) <= 0) {
