@@ -15,6 +15,8 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
+// sudo apt install whois
+
 namespace my {
 
     template<class T> struct DeleterOf;
@@ -152,6 +154,33 @@ namespace my {
         return password_db;
     }
 
+    void save_password_database(std::map<std::string, std::string> password_db)
+    {
+        std::ofstream out("~/ca/user_passwords");
+        for (auto const& x: password_db) {
+            out << x.first;
+            out << " ";
+            out << x.second;
+            out << "\n";
+        }
+        out.close();
+    }
+
+    std::string hash_password(std::string password)
+    {
+        std::array<char, 128> buffer;
+        std::string result;
+        std::string command = "mkpasswd --method=sha512crypt --salt=5Q91hyuzJvXqU67r \"" + password + "\"";
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+        if (!pipe) {
+            throw std::runtime_error("popen() failed!");
+        }
+        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+            result += buffer.data();
+        }
+        return result;
+    }
+
     my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
     {
         if (BIO_do_accept(accept_bio) <= 0) {
@@ -213,8 +242,28 @@ int main()
         try {
             std::string request = my::receive_http_message(bio.get());
             printf("Got request:\n");
-            printf("%s\n", request.c_str());
-            my::send_http_response(bio.get(), "okay cool\n");
+            std::vector<std::string> requestLines = splitStringBy(request, "\r\n");
+            std::map<std::string, std::string> paramMap;
+            std::vector<std::string> params = splitStringBy(requestLines[5], "&");
+            for (int i = 0; i < params.size(); i ++) {
+                std::vector <std::string> kv = splitStringBy(params[i], "=");
+                paramMap[kv[0]] = kv[1];
+            }
+
+            if (paramMap["type"].compare("getcert") == 0) {
+                std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
+                if (password_db.find(paramMap["username"]) != password_db.end()) {
+                    my::send_http_response(bio.get(), "user already in system.\n");
+                } else {
+                    std::string hashedPassword = my::hash_password(paramMap["password"]);
+                    std::cout << hashedPassword << std::endl;
+                    password_db[paramMap["username"]] = hashedPassword;
+                    my::save_password_database(password_db);
+                    my::send_http_response(bio.get(), "succeeded!\n");
+                }
+            } else {
+                my::send_http_response(bio.get(), "unimplemented request type\n");
+            }
         } catch (const std::exception& ex) {
             printf("Worker exited with exception:\n%s\n", ex.what());
         }
