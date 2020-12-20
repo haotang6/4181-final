@@ -25,6 +25,7 @@ string exec(const string& cmd) {
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
         result += buffer.data();
     }
+    result.pop_back();
     return result;
 }
 
@@ -36,35 +37,27 @@ parameter:  key_file: should decrypt it and then use it to decrypt msg
             idmap
 */
 void check_and_decrypt(string key_file, string id_mail_file, string sign_file, 
-                       string sendername, unordered_map<string, int>& idmap) {
+                       unordered_map<string, int>& idmap) {
     
     // get key for decryption from key_file
     system(("openssl rsautl -decrypt -inkey " + key_path + 
-            " -in " + key_file + " -out key.dec").c_str());
+            " -in " + key_file + " -out temp.key.dec").c_str());
 
     // split the id and encrypted file
     ifstream id_mail(id_mail_file.c_str(), ifstream::binary);
-    ofstream encrypted("mail.enc", ofstream::binary);
+    ofstream encrypted("temp.mail.enc", ofstream::binary);
     string id;
     getline(id_mail, id);
     encrypted << id_mail.rdbuf();
     id_mail.close();
     encrypted.close();
-
-    // check id
-    // system("openssl x509 -noout -subject -in sender.cert.pem");
-    if (!idmap.count(sendername)) idmap[sendername]=0;
-    if (++idmap[sendername] != stoi(id)) {
-        cout << "id corrupted. " << endl;
-        return;
-    }
     
     // decrypt file
-    system("openssl enc -d -pbkdf2 -in mail.enc -out temp.dec -pass file:./key.dec");
+    system("openssl enc -d -pbkdf2 -in temp.mail.enc -out temp.dec -pass file:./temp.key.dec");
 
     // split decrypted to [cert, msg]
     ifstream decrypted("temp.dec", ifstream::binary);
-    ofstream cert("sender.cert.pem", ofstream::binary);
+    ofstream cert("temp.sender.cert.pem", ofstream::binary);
     ofstream msg("message.txt", ofstream::binary);
     string line;
     while(getline(decrypted, line)){
@@ -76,16 +69,31 @@ void check_and_decrypt(string key_file, string id_mail_file, string sign_file,
     decrypted.close();
     msg.close();
 
-    // need to be done check sender's cert
-    system("openssl verify -CAfile ca-cert.pem sender.cert.pem");
+    // check sender's cert
+    if (exec("openssl verify -CAfile ca-cert.pem temp.sender.cert.pem") != "temp.sender.cert.pem: OK") {
+        cout << "Sender's certificate is not verified" << endl;
+        return;
+    }
+
+    // check id
+    string subname = exec("openssl x509 -noout -subject -in temp.sender.cert.pem");
+    string sendername = subname.substr(subname.rfind(" ") + 1);
+    if (!idmap.count(sendername)) idmap[sendername]=0;
+    if (++idmap[sendername] != stoi(id)) {
+        cout << "id corrupted. " << endl;
+        //return;
+    }
 
     // get pub key from cert and check signiture
-    system("openssl x509 -pubkey -noout -in sender.cert.pem > sender.pubkey.pem");
-    if (exec("openssl dgst -sha256 -verify sender.pubkey.pem -signature " +
-            sign_file + " " + id_mail_file) != "Verified OK\n") {
+    system("openssl x509 -pubkey -noout -in temp.sender.cert.pem > temp.sender.pubkey.pem");
+    if (exec("openssl dgst -sha256 -verify temp.sender.pubkey.pem -signature " +
+            sign_file + " " + id_mail_file) != "Verified OK") {
             cout << "Mail corrupted." << endl;
             return;
     }
+
+    // clear intermediate files
+    system("rm -rf temp.*");
 }
 
 int main(){
@@ -100,7 +108,7 @@ int main(){
     idfile.close();
 
     // get 3 files: key.bin.enc id_mail.enc signature.sign
-    check_and_decrypt("key.bin.enc", "id_mail.enc", "signature.sign", "Cindy", idmap);
+    check_and_decrypt("key.bin.enc", "id_mail.enc", "signature.sign", idmap);
 
     // update the id file
     ofstream idfile2(id_path.c_str(), ofstream::binary);

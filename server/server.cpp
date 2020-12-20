@@ -9,6 +9,8 @@
 #include <vector>
 #include <iostream>
 #include <map>
+#include <fstream>
+#include <streambuf>
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
@@ -202,6 +204,7 @@ int main()
             printf("Got request:\n");
 
             // handle request based on type
+            //std::cout << request << std::endl;
             std::vector<std::string> requestLines = splitStringBy(request, "\r\n");
             std::map<std::string, std::string> paramMap;
             std::vector<std::string> params = splitStringBy(requestLines[5], "&");
@@ -212,12 +215,39 @@ int main()
 
             if (paramMap["type"].compare("getcert") == 0) {
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
-
+                my::send_http_response(bio.get(), "okay cool\n");
             } else if (paramMap["type"].compare("changepw") == 0) {
                 std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
+                my::send_http_response(bio.get(), "okay cool\n");
+            } else if (paramMap["type"].compare("sendmsg") == 0) {
+                if (paramMap["step"].compare("cert") == 0) {
+                    std::string r = std::to_string(rand());  // need to be checked the same!
+                    std::cout << "sendmsg request. rand number sent is " << r << std::endl;
+                    // need to change the certificate
+                    std::ofstream f("num.temp", std::ofstream::binary);
+                    f << r;
+                    f.close();
+                    system("openssl pkeyutl -encrypt -pubin -inkey ../client/cindy.pubkey.pem -in num.temp -out encryp.temp");
+                    std::ifstream encryptn("encryp.temp", std::ifstream::binary);
+                    std::string encrypted_r((std::istreambuf_iterator<char>(encryptn)), std::istreambuf_iterator<char>());
+                    encryptn.close();
+                    my::send_http_response(bio.get(), encrypted_r);
+                } else if (paramMap["step"].compare("number") == 0) {
+                    std::cout << "sendmsg request. rand number receive is " << paramMap["number"] << std::endl;
+                    // to be done: compare paramMap["number"] with previous one
+                    // send recipient certificate, need change
+                    std::ifstream f("../client/bob.cert.pem", std::ifstream::binary);
+                    std::string cert((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+                    f.close();
+                    my::send_http_response(bio.get(),cert);
+                } else if (paramMap["step"].compare("recipient") == 0) {
+                    std::cout << "sendmsg request. msg get " << std::endl << paramMap["msg"];
+                    std::ofstream msg("msgget", std::ofstream::binary);
+                    msg << paramMap["msg"];
+                    msg.close();
+                    my::send_http_response(bio.get(),"ok");
+                }
             }
-
-            my::send_http_response(bio.get(), "okay cool\n");
         } catch (const std::exception& ex) {
             printf("Worker exited with exception:\n%s\n", ex.what());
         }
