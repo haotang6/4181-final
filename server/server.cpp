@@ -266,7 +266,7 @@ int main()
                 if (BIO_do_handshake(CAssl_bio.get()) <= 0) {
                     my::print_errors_and_exit("Error in BIO_do_handshake");
                 }
-                my::verify_the_certificate(my::get_ssl(CAssl_bio.get()), "Haotang Ltd Intermediate CA");
+                //my::verify_the_certificate(my::get_ssl(CAssl_bio.get()), "Haotang Ltd Intermediate CA");
 
                 std::string fields = "type=getcert&username=" + username + "&password=" + password;
                 std::string request = "POST / HTTP/1.1\r\n";
