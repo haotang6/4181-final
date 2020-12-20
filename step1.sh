@@ -1,9 +1,6 @@
 #!/bin/bash
 rm -rf ~/ca
 
-# current directory
-export cwd=$(pwd)
-
 # root CA
 mkdir ~/ca
 cd ~/ca
@@ -291,5 +288,3 @@ openssl verify -CAfile certs/ca.cert.pem \
 cat intermediate/certs/intermediate.cert.pem \
       certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem
 chmod 444 intermediate/certs/ca-chain.cert.pem
-
-mv ~/ca $cwd/ca
