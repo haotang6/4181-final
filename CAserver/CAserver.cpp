@@ -202,10 +202,10 @@ int main()
     SSL_CTX_set_min_proto_version(ctx.get(), TLS1_2_VERSION);
 #endif
 
-    if (SSL_CTX_use_certificate_file(ctx.get(), "ca-cert.pem", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_certificate_file(ctx.get(), "caserver.cert.pem", SSL_FILETYPE_PEM) <= 0) {
         my::print_errors_and_exit("Error loading server certificate");
     }
-    if (SSL_CTX_use_PrivateKey_file(ctx.get(), "ca.key.pem", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_PrivateKey_file(ctx.get(), "caserver.key.pem", SSL_FILETYPE_PEM) <= 0) {
         my::print_errors_and_exit("Error loading server private key");
     }
 
