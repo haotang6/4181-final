@@ -15,6 +15,8 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
+// sudo apt install whois
+
 namespace my {
 
     template<class T> struct DeleterOf;
@@ -164,6 +166,21 @@ namespace my {
         out.close();
     }
 
+    std::string hash_password(std::string password)
+    {
+        std::array<char, 128> buffer;
+        std::string result;
+        std::string command = "mkpasswd --method=sha512crypt --salt=5Q91hyuzJvXqU67r \"" + password + "\""
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+        if (!pipe) {
+            throw std::runtime_error("popen() failed!");
+        }
+        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+            result += buffer.data();
+        }
+        return result;
+    }
+
     my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
     {
         if (BIO_do_accept(accept_bio) <= 0) {
@@ -237,7 +254,9 @@ int main()
                 if (paramMap.find(paramMap["username"]) != paramMap.end()) {
                     my::send_http_response(bio.get(), "user already in system.\n");
                 } else {
-
+                    std::string hashedPassword = my::hash_password(paramMap["password"]);
+                    std::cout << hashedPassword << std::endl;
+                    my::save_password_database(database);
                 }
             } else {
                 my::send_http_response(bio.get(), "unimplemented request type\n");
