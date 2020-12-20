@@ -204,26 +204,6 @@ int main(){
     string number = exec("openssl pkeyutl -decrypt -inkey " + key_path + " -in temp.number");
     remove("temp.number");
 
-    /********* establish connection again and send number and recipient ************/
-
-//     bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"));
-//     if (bio == nullptr) {
-//         my::print_errors_and_exit("Error in BIO_new_connect");
-//     }
-//     if (BIO_do_connect(bio.get()) <= 0) {
-//         my::print_errors_and_exit("Error in BIO_do_connect");
-//     }
-//     ssl_bio = std::move(bio)
-//                    | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
-//     ;
-//     SSL_set_tlsext_host_name(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
-// #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-//     SSL_set1_host(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
-// #endif
-//     if (BIO_do_handshake(ssl_bio.get()) <= 0) {
-//         my::print_errors_and_exit("Error in BIO_do_handshake");
-//     }
-//     my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
 
     send_number_and_recipient(ssl_bio.get(), number, "bob");
     response = my::receive_http_message(ssl_bio.get());
@@ -232,28 +212,7 @@ int main(){
     /***  above all is to get recipient certificate and store to recipient.cert.pem ***/
 
     generate_message("bob", "testMessage.txt", idmap);
-
     system("rm -rf testMessage.txt");
-    /********* establish connection again and send 3 parts of the message ************/
-
-//     bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"));
-//     if (bio == nullptr) {
-//         my::print_errors_and_exit("Error in BIO_new_connect");
-//     }
-//     if (BIO_do_connect(bio.get()) <= 0) {
-//         my::print_errors_and_exit("Error in BIO_do_connect");
-//     }
-//     ssl_bio = std::move(bio)
-//                    | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
-//     ;
-//     SSL_set_tlsext_host_name(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
-// #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-//     SSL_set1_host(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
-// #endif
-//     if (BIO_do_handshake(ssl_bio.get()) <= 0) {
-//         my::print_errors_and_exit("Error in BIO_do_handshake");
-//     }
-//     my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
 
     send_msg(ssl_bio.get(), "bob");
     response = my::receive_http_message(ssl_bio.get());
