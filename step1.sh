@@ -307,8 +307,8 @@ mkdir certs crl csr newcerts private
 chmod 700 private
 touch index.txt
 echo 1000 > serial
-echo 1000 > $root/intermediate/crlnumber
-cd $root
+echo 1000 > crlnumber
+cd ../
 openssl genrsa -aes256 -passout pass:1234\
       -out intermediate/private/intermediate.key.pem 4096
 chmod 400 intermediate/private/intermediate.key.pem
