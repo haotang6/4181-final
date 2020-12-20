@@ -257,7 +257,9 @@ int main()
                 } else {
                     std::string hashedPassword = my::hash_password(paramMap["password"]);
                     std::cout << hashedPassword << std::endl;
+                    password_db[paramMap["username"]] = hashedPassword;
                     my::save_password_database(password_db);
+                    my::send_http_response(bio.get(), "succeeded!\n");
                 }
             } else {
                 my::send_http_response(bio.get(), "unimplemented request type\n");
