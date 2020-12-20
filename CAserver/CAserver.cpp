@@ -180,7 +180,6 @@ int main()
 {
 
     std::map<std::string, std::string> password_db = my::load_password_database();
-    printf("Password database loaded.\n");
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     SSL_library_init();
