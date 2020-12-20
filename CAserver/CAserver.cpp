@@ -205,7 +205,7 @@ int main()
     signal(SIGINT, [](int) { shutdown_the_socket(); });
 
     std::map<std::string, std::string> password_db = my::load_password_database();
-    std::cout << "password data loaded."
+    std::cout << "password data loaded.";
     while (auto bio = my::accept_new_tcp_connection(accept_bio.get())) {
         bio = std::move(bio)
               | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 0))
