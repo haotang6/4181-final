@@ -16,7 +16,7 @@ echo $2
 #       -subj "/C=US/ST=California/L=LA/O=georgia/OU=georgia/CN=georgia"
 # -----------------------------------------------------------------------
 
-openssl ca -batch -config ../ca/intermediate/openssl.cnf \
+openssl ca -batch -config ~/ca/intermediate/openssl.cnf \
       -extensions usr_cert -days 375 -notext -md sha256 \
       -passin pass:1234 \
       -in $2 \
