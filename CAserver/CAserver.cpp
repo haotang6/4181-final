@@ -141,7 +141,7 @@ namespace my {
     std::map<std::string, std::string> load_password_database()
     {
         std::map<std::string, std::string> password_db;
-        std::ifstream in("~/ca/user_passwords");
+        std::ifstream in("../ca/user_passwords");
         std::string str;
         while (std::getline(in, str))
         {
@@ -156,7 +156,7 @@ namespace my {
 
     void save_password_database(std::map<std::string, std::string> password_db)
     {
-        std::ofstream out("~/ca/user_passwords");
+        std::ofstream out("../ca/user_passwords");
         for (auto const& x: password_db) {
             out << x.first;
             out << " ";
@@ -209,6 +209,9 @@ int main()
 {
 
     std::map<std::string, std::string> password_db = my::load_password_database();
+    for(auto itr = password_db.begin(); itr != password_db.end(); itr++) {
+        std::cout << itr->first << ' ' << itr->second << std::endl;
+    }
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     SSL_library_init();
