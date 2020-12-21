@@ -20,5 +20,5 @@ openssl ca -batch -config ~/ca/intermediate/openssl.cnf \
       -extensions usr_cert -days 375 -notext -md sha256 \
       -passin pass:1234 \
       -in $2 \
-      -out ~/ca/intermediate/certs/$1.cert.pem \
+      -out ../ca/intermediate/certs/$1.cert.pem \
       -subj "/C=US/ST=California/L=LA/O='$1'/OU='$1'/CN='$1'"

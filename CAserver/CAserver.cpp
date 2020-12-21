@@ -290,7 +290,7 @@ int main()
                     my::save_password_database(password_db);
                     my::sign_certificate(paramMap["username"], "tmp/" + paramMap["username"] + ".csr.pem");
                     my::send_http_response(bio.get(),
-                        my::read_certificate("~/ca/intermediate/certs/" + paramMap["username"] + ".cert.pem"));
+                        my::read_certificate("../ca/intermediate/certs/" + paramMap["username"] + ".cert.pem"));
                 }
             } else {
                 my::send_http_response(bio.get(), "unimplemented request type\n");
