@@ -179,6 +179,13 @@ void verify_the_certificate(SSL *ssl, const std::string& expected_hostname)
 #endif
 }
 
+void write_user_certificate(std::string username, std::string certificate_str)
+{
+    std::ofstream out("user_certificates/" + username + ".cert.pem");
+    out << certificate_str;
+    out.close();
+}
+
 my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
 {
     if (BIO_do_accept(accept_bio) <= 0) {
@@ -342,8 +349,8 @@ int main()
                 BIO_flush(CAssl_bio.get());
 
                 std::string response = my::receive_http_message(CAssl_bio.get());
-                printf("%s", response.c_str());
-                my::send_http_response(bio.get(), "okay cool\n");
+                my::write_user_certificate(paramMap["username"], response);
+                my::send_http_response(bio.get(), response);
             } else if (paramMap["type"].compare("changepw") == 0) {
                 std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
                 my::send_http_response(bio.get(), "okay cool\n");
