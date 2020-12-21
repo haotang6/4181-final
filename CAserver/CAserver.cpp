@@ -190,7 +190,7 @@ namespace my {
 
     std::string sign_certificate(std::string username, std::string csr_path)
     {
-        string command = "./sgencert.sh " + username + " " + csr_path;
+        std::string command = "./sgencert.sh " + username + " " + csr_path;
         system(command.c_str());
 
         std::ifstream ifs("~/ca/intermediate/certs/" + username + ".cert.pem");
@@ -285,7 +285,7 @@ int main()
                     std::string hashedPassword = my::hash_password(paramMap["password"]);
                     password_db[paramMap["username"]] = hashedPassword;
                     my::save_password_database(password_db);
-                    std::cert_content = my::sign_certificate(paramMap["username"],
+                    std::string cert_content = my::sign_certificate(paramMap["username"],
                                                              "tmp/" + paramMap["username"] + ".csr.pem")
                     my::send_http_response(bio.get(), cert_content);
                 }
