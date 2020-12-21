@@ -306,14 +306,15 @@ int main()
                 my::send_http_response(bio.get(), "okay cool\n");
             } else if (paramMap["type"].compare("sendmsg") == 0) {
                 std::cout << "sendmsg request. certificate get." << std::endl;
-                // need to be done: check certificate
+                //TODO: check certificate
 
                 std::string r = std::to_string(rand());  // need to be checked the same!
                 std::cout << "sendmsg request. rand number sent is " << r << std::endl;
-                // need to change the certificate
+                //TODO: change the certificate
                 std::ofstream f("num.temp", std::ofstream::binary);
                 f << r;
                 f.close();
+                //TODO: use sender's pubkey 
                 system("openssl pkeyutl -encrypt -pubin -inkey ../client/cindy.pubkey.pem -in num.temp -out encryp.temp");
                 std::ifstream encryptn("encryp.temp", std::ifstream::binary);
                 std::string encrypted_r((std::istreambuf_iterator<char>(encryptn)), std::istreambuf_iterator<char>());
@@ -335,20 +336,41 @@ int main()
                 else {
                     std::cout << "Number match! Identity confirmed!!!" << std::endl;
                 }
-                // send recipient certificate, need change
+
+                // TODO para[1] = recipient name, check if its cert exists
+
+
+                // TODO send recipient certificate
                 std::ifstream f2("../client/bob.cert.pem", std::ifstream::binary);
                 std::string cert((std::istreambuf_iterator<char>(f2)), std::istreambuf_iterator<char>());
                 f2.close();
                 my::send_http_response(bio.get(),cert);
 
-                // get msg
                 request = my::receive_http_message(bio.get());
                 printf("Got request:\n");           
                 requestLines = splitStringBy(request, "\r\n");
-                std::cout << "sendmsg request. msg get " << std::endl ;//<< requestLines[5];
-                std::ofstream msg("msgget", std::ofstream::binary);
-                msg << requestLines[5];
-                msg.close();
+                std::cout << "sendmsg request. key.bin.enc get " << std::endl ;//<< requestLines[5];
+                std::ofstream msg1("messages/key.bin.enc", std::ofstream::binary);
+                msg1 << requestLines[5];
+                msg1.close();
+                my::send_http_response(bio.get(),"ok");
+
+                request = my::receive_http_message(bio.get());
+                printf("Got request:\n");           
+                requestLines = splitStringBy(request, "\r\n");
+                std::cout << "sendmsg request. id_mail.enc get " << std::endl ;//<< requestLines[5];
+                std::ofstream msg2("messages/id_mail.enc", std::ofstream::binary);
+                msg2 << requestLines[5];
+                msg2.close();
+                my::send_http_response(bio.get(),"ok");
+
+                request = my::receive_http_message(bio.get());
+                printf("Got request:\n");           
+                requestLines = splitStringBy(request, "\r\n");
+                std::cout << "sendmsg request. signature.sign get " << std::endl ;//<< requestLines[5];
+                std::ofstream msg3("messages/signature.sign", std::ofstream::binary);
+                msg3 << requestLines[5];
+                msg3.close();
                 my::send_http_response(bio.get(),"ok");
             }
         } catch (const std::exception& ex) {

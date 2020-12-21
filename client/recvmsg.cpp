@@ -53,7 +53,7 @@ void check_and_decrypt(string key_file, string id_mail_file, string sign_file,
     encrypted.close();
     
     // decrypt file
-    system("openssl enc -d -des3 -pbkdf2 -in temp.mail.enc -out temp.dec -pass file:./temp.key.dec");
+    system("openssl enc -d -aes-256-cbc -in temp.mail.enc -out temp.dec -pass file:temp.key.dec");
 
     // split decrypted to [cert, msg]
     ifstream decrypted("temp.dec", ifstream::binary);
@@ -108,7 +108,7 @@ int main(){
     idfile.close();
 
     // get 3 files: key.bin.enc id_mail.enc signature.sign
-    check_and_decrypt("key.bin.enc", "id_mail.enc", "signature.sign", idmap);
+    check_and_decrypt("tmp/key.bin.enc", "tmp/id_mail.enc", "tmp/signature.sign", idmap);
 
     // update the id file
     ofstream idfile2(id_path.c_str(), ofstream::binary);

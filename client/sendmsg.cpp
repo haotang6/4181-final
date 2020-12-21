@@ -86,6 +86,13 @@ void send_number_and_recipient(BIO *bio, const string & number, string recipient
     BIO_flush(bio);
 }
 
+void send_request(BIO *bio, const string & msg) {
+    string request = generate_header(msg.size());
+    request += msg + "\r\n\r\n";
+    BIO_write(bio, request.data(), request.size());
+    BIO_flush(bio);
+}
+
 void send_msg(BIO *bio, string recipient) {
     ifstream f1("tmp/key.bin.enc", ifstream::binary);
     string keyenc((std::istreambuf_iterator<char>(f1)), std::istreambuf_iterator<char>());
@@ -97,12 +104,9 @@ void send_msg(BIO *bio, string recipient) {
     string sg((std::istreambuf_iterator<char>(f3)), std::istreambuf_iterator<char>());
     f3.close();
 
-    string fields = keyenc + "\n\n" + idmail + "\n\n" + sg;
-    string request = generate_header(fields.size());
-    request += fields + "\r\n";
-    request += "\r\n";
-    BIO_write(bio, request.data(), request.size());
-    BIO_flush(bio);
+    send_request(bio, keyenc);
+    send_request(bio, idmail);
+    send_request(bio, sg);
 }
 
 /*
@@ -120,8 +124,8 @@ void generate_message(string username, unordered_map<string, int>& idmap) {
     system("openssl rsautl -encrypt -pubin -inkey tmp/recipient.pubkey.pem -in tmp/key.bin -out tmp/key.bin.enc");
     
     // use symmetric encryption to encrypt the file
-    system("openssl enc -des3 -pbkdf2 -salt -in tmp/cert_msg -out tmp/cert_msg.enc -pass file:tmp/key.bin");
-
+    system("openssl enc -aes-256-cbc -salt -in tmp/cert_msg -out tmp/cert_msg.enc -pass file:tmp/key.bin");
+    
     // add id before
     if (!idmap.count(username)) idmap[username] = 0;
     ofstream out("tmp/id_mail.enc", ofstream::binary);
@@ -161,6 +165,7 @@ int main(int argc, const char * argv[]){
         cout << "Couldn't find client certificate." << endl;
         return 1;
     }
+    system("mkdir -p tmp");
     ofstream out("tmp/cert_msg", ofstream::binary);
     out << cert.rdbuf() << endl << msg.rdbuf();
     msg.close();
@@ -215,7 +220,6 @@ int main(int argc, const char * argv[]){
 
     string response = my::receive_http_message(ssl_bio.get());
 
-    system("mkdir -p tmp");
     get_body_and_store(response, "tmp/number.enc");
     string number = exec("openssl pkeyutl -decrypt -inkey " + key_path + " -in tmp/number.enc");
     cout << number << endl;
