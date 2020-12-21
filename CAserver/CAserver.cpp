@@ -255,7 +255,7 @@ int main()
 
             std::string csr = "";
             for (int i = 6; i < requestLines.size(); i ++) {
-                csr += requestLines;
+                csr += requestLines[i];
             }
             std::cout << csr << std::endl;
 
