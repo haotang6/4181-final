@@ -305,6 +305,9 @@ int main()
                 std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
                 my::send_http_response(bio.get(), "okay cool\n");
             } else if (paramMap["type"].compare("sendmsg") == 0) {
+                std::cout << "sendmsg request. certificate get." << std::endl;
+                // need to be done: check certificate
+
                 std::string r = std::to_string(rand());  // need to be checked the same!
                 std::cout << "sendmsg request. rand number sent is " << r << std::endl;
                 // need to change the certificate
@@ -323,12 +326,14 @@ int main()
                 printf("Got request:\n");           
                 std::vector<std::string> requestLines = splitStringBy(request, "\r\n");
                 std::vector<std::string> para = splitStringBy(requestLines[5], "&");
-                std::cout << "sendmsg request. rand number receive is " + para[0] << " recipient is " << para[1] << std::endl;
-                // to be done: compare paramMap["number"] with previous one
+                std::cout << "sendmsg request. rand number receive is " + para[0] << ", recipient is " << para[1] << std::endl;
                 if (para[0] != r) {
-                    std::cout << "Number does not match! Fake identity!!!" << std::endl;
-                    my::send_http_response(bio.get(),"Number does not match! Fake identity!!!");
+                    //std::cout << "Number does not match! Fake identity!!!" << std::endl;
+                    my::send_http_response(bio.get(),"Fake identity");
                     continue;
+                }
+                else {
+                    std::cout << "Number match! Identity confirmed!!!" << std::endl;
                 }
                 // send recipient certificate, need change
                 std::ifstream f2("../client/bob.cert.pem", std::ifstream::binary);
@@ -337,7 +342,6 @@ int main()
                 my::send_http_response(bio.get(),cert);
 
                 // get msg
-                //bio = my::accept_new_tcp_connection(accept_bio.get());
                 request = my::receive_http_message(bio.get());
                 printf("Got request:\n");           
                 requestLines = splitStringBy(request, "\r\n");
