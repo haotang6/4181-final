@@ -169,7 +169,7 @@ namespace my {
     void save_csr_to_tmp(std::string username, std::string csr_content)
     {
         std::ofstream out("tmp/" + username + ".csr.pem");
-        out << csr_content + "\n";
+        out << csr_content;
         out.close();
     }
 
@@ -186,6 +186,17 @@ namespace my {
             result += buffer.data();
         }
         return result;
+    }
+
+    std::string sign_certificate(std::string username, std::string csr_path)
+    {
+        string command = "./sgencert.sh " + username + " " + csr_path;
+        system(command.c_str());
+
+        std::ifstream ifs("~/ca/intermediate/certs/" + username + ".cert.pem");
+        std::string cert_content( (std::istreambuf_iterator<char>(ifs) ),
+                             (std::istreambuf_iterator<char>()    ) );
+        return cert_content;
     }
 
     my::UniquePtr<BIO> accept_new_tcp_connection(BIO *accept_bio)
@@ -274,7 +285,9 @@ int main()
                     std::string hashedPassword = my::hash_password(paramMap["password"]);
                     password_db[paramMap["username"]] = hashedPassword;
                     my::save_password_database(password_db);
-                    my::send_http_response(bio.get(), "succeeded!\n");
+                    std::cert_content = my::sign_certificate(paramMap["username"],
+                                                             "tmp/" + paramMap["username"] + ".csr.pem")
+                    my::send_http_response(bio.get(), cert_content);
                 }
             } else {
                 my::send_http_response(bio.get(), "unimplemented request type\n");
