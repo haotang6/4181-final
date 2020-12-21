@@ -286,7 +286,7 @@ int main()
                     password_db[paramMap["username"]] = hashedPassword;
                     my::save_password_database(password_db);
                     std::string cert_content = my::sign_certificate(paramMap["username"],
-                                                             "tmp/" + paramMap["username"] + ".csr.pem")
+                                                             "tmp/" + paramMap["username"] + ".csr.pem");
                     my::send_http_response(bio.get(), cert_content);
                 }
             } else {
