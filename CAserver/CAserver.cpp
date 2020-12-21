@@ -253,13 +253,18 @@ int main()
                 paramMap[kv[0]] = kv[1];
             }
 
+            std::string csr = "";
+            for (int i = 6; i < requestLines.size(); i ++) {
+                csr += requestLines;
+            }
+            std::cout << csr << std::endl;
+
             if (paramMap["type"].compare("getcert") == 0) {
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
                 if (password_db.find(paramMap["username"]) != password_db.end()) {
                     my::send_http_response(bio.get(), "user already in system.\n");
                 } else {
                     std::string hashedPassword = my::hash_password(paramMap["password"]);
-                    std::cout << hashedPassword << std::endl;
                     password_db[paramMap["username"]] = hashedPassword;
                     my::save_password_database(password_db);
                     my::send_http_response(bio.get(), "succeeded!\n");
