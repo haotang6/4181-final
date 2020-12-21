@@ -11,6 +11,7 @@
 #include <map>
 #include <fstream>
 #include <streambuf>
+#include <dirent.h>
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
@@ -202,6 +203,43 @@ std::vector<std::string> splitStringBy(std::string s, std::string delimiter) {
     return splitted;
 }
 
+// execute shell command and return the output
+std::string exec(const std::string& cmd) {
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+    if (!pipe) {
+        std::cerr << "popen() failed!" <<std::endl;
+        exit(1);
+    }
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+    if (result.back()=='\n') result.pop_back();
+    return result;
+}
+
+int count_message_number(std::string path) {
+    DIR* dirp = opendir(path.c_str());
+    int count = -2;
+    struct dirent *directory;
+    if (dirp) {
+        while ((directory = readdir(dirp)) != nullptr) {
+            count++;
+        }
+        closedir(dirp);
+        return count == -2 ? 0 : count;
+    } else {
+        return -1;
+    }
+}
+
+void clean() {
+    // delete "tmp/*"
+    // Next line (may) create a bug.  
+    system("rm tmp/*");
+}
+
 int main()
 {
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -311,17 +349,25 @@ int main()
                 my::send_http_response(bio.get(), "okay cool\n");
             } else if (paramMap["type"].compare("sendmsg") == 0) {
                 std::cout << "sendmsg request. certificate get." << std::endl;
-                //TODO: check certificate
-
+                //check certificate
+                std::ofstream sender_cert("tmp/sender.cert.pem", std::ofstream::binary);
+                sender_cert << paramMap["cert"];
+                sender_cert.close();
+                if (exec("openssl verify -CAfile ca-chain.cert.pem tmp/sender.cert.pem") != "tmp/sender.cert.pem: OK") {
+                    std::cout << "Sender's certificate is not verified" << std::endl;
+                    my::send_http_response(bio.get(),"fake-identity");
+                    clean();
+                    continue;
+                }
                 std::string r = std::to_string(rand());  // need to be checked the same!
                 std::cout << "sendmsg request. rand number sent is " << r << std::endl;
-                //TODO: change the certificate
-                std::ofstream f("num.temp", std::ofstream::binary);
+                std::ofstream f("tmp/num.temp", std::ofstream::binary);
                 f << r;
                 f.close();
-                //TODO: use sender's pubkey 
-                system("openssl pkeyutl -encrypt -pubin -inkey ../client/cindy.pubkey.pem -in num.temp -out encryp.temp");
-                std::ifstream encryptn("encryp.temp", std::ifstream::binary);
+                //use sender's pubkey to encrypt the rand num
+                system("openssl x509 -pubkey -noout -in tmp/sender.cert.pem > tmp/sender.pubkey.pem");
+                system("openssl pkeyutl -encrypt -pubin -inkey tmp/sender.pubkey.pem -in tmp/num.temp -out tmp/encryp.temp");
+                std::ifstream encryptn("tmp/encryp.temp", std::ifstream::binary);
                 std::string encrypted_r((std::istreambuf_iterator<char>(encryptn)), std::istreambuf_iterator<char>());
                 encryptn.close();
                 my::send_http_response(bio.get(), encrypted_r);
@@ -335,18 +381,24 @@ int main()
                 std::cout << "sendmsg request. rand number receive is " + para[0] << ", recipient is " << para[1] << std::endl;
                 if (para[0] != r) {
                     //std::cout << "Number does not match! Fake identity!!!" << std::endl;
-                    my::send_http_response(bio.get(),"Fake identity");
+                    my::send_http_response(bio.get(),"fake-identity");
+                    clean();
                     continue;
                 }
                 else {
                     std::cout << "Number match! Identity confirmed!!!" << std::endl;
                 }
 
-                // TODO para[1] = recipient name, check if its cert exists
+                // check if recipient cert exists
+                std::string recipient_cert_path = "certs/"+para[1]+".cert.pem";
+                std::ifstream f2(recipient_cert_path, std::ifstream::binary);
+                if(!f2) {
+                    my::send_http_response(bio.get(),"non-existent-recipent-cert");
+                    clean();
+                    continue;
+                }
 
-
-                // TODO send recipient certificate
-                std::ifstream f2("../client/bob.cert.pem", std::ifstream::binary);
+                // send recipient certificate
                 std::string cert((std::istreambuf_iterator<char>(f2)), std::istreambuf_iterator<char>());
                 f2.close();
                 my::send_http_response(bio.get(),cert);
@@ -355,7 +407,21 @@ int main()
                 printf("Got request:\n");           
                 requestLines = splitStringBy(request, "\r\n");
                 std::cout << "sendmsg request. key.bin.enc get " << std::endl ;//<< requestLines[5];
-                std::ofstream msg1("messages/key.bin.enc", std::ofstream::binary);
+                int count = count_message_number("messages/" + para[1]);
+                if (count == -1) {
+                    system(("mkdir messages/" + para[1]).c_str());
+                    count = 0;
+                }
+                else if (count > 99999) {
+                    std::cerr << para[1] << "'s mailbox is full!" << std::endl; 
+                    clean();
+                    continue;
+                }
+        
+                std::string s_count = std::to_string(count);
+                std::string file_prefix = "messages/" + para[1] + "/" + std::string(5 - s_count.length(), '0') + s_count + "/";
+                system(("mkdir " + file_prefix).c_str());
+                std::ofstream msg1(file_prefix + "key.bin.enc", std::ofstream::binary);
                 msg1 << requestLines[5];
                 msg1.close();
                 my::send_http_response(bio.get(),"ok");
@@ -364,7 +430,7 @@ int main()
                 printf("Got request:\n");           
                 requestLines = splitStringBy(request, "\r\n");
                 std::cout << "sendmsg request. id_mail.enc get " << std::endl ;//<< requestLines[5];
-                std::ofstream msg2("messages/id_mail.enc", std::ofstream::binary);
+                std::ofstream msg2(file_prefix + "id_mail.enc", std::ofstream::binary);
                 msg2 << requestLines[5];
                 msg2.close();
                 my::send_http_response(bio.get(),"ok");
@@ -373,23 +439,34 @@ int main()
                 printf("Got request:\n");           
                 requestLines = splitStringBy(request, "\r\n");
                 std::cout << "sendmsg request. signature.sign get " << std::endl ;//<< requestLines[5];
-                std::ofstream msg3("messages/signature.sign", std::ofstream::binary);
+                std::ofstream msg3(file_prefix + "signature.sign", std::ofstream::binary);
                 msg3 << requestLines[5];
                 msg3.close();
                 my::send_http_response(bio.get(),"ok");
+                clean();
             } else if (paramMap["type"].compare("recvmsg") == 0) {
-                std::cout << "sendmsg request. certificate get." << std::endl;
-                //TODO: check certificate
+                std::cout << "recvmsg request. certificate get." << std::endl;
+                //check certificate
+                std::ofstream recipient_cert("tmp/recipient.cert.pem", std::ofstream::binary);
+                recipient_cert << paramMap["cert"];
+                recipient_cert.close();
+                if (exec("openssl verify -CAfile ca-chain.cert.pem tmp/recipient.cert.pem") != "tmp/recipient.cert.pem: OK") {
+                    std::cout << "Recipient's certificate is not verified" << std::endl;
+                    my::send_http_response(bio.get(),"fake-identity");
+                    clean();
+                    continue;
+                }
 
                 std::string r = std::to_string(rand());  // need to be checked the same!
-                std::cout << "sendmsg request. rand number sent is " << r << std::endl;
-                //TODO: change the certificate
-                std::ofstream f("num.temp", std::ofstream::binary);
+                std::cout << "recvmsg request. rand number sent is " << r << std::endl;
+
+                std::ofstream f("tmp/num.temp", std::ofstream::binary);
                 f << r;
                 f.close();
-                //TODO: use recipient's pubkey 
-                system("openssl pkeyutl -encrypt -pubin -inkey ../client/bob.pubkey.pem -in num.temp -out encryp.temp");
-                std::ifstream encryptn("encryp.temp", std::ifstream::binary);
+                //use recipient's pubkey 
+                system("openssl x509 -pubkey -noout -in tmp/recipient.cert.pem > tmp/recipient.pubkey.pem");
+                system("openssl pkeyutl -encrypt -pubin -inkey tmp/recipient.pubkey.pem -in tmp/num.temp -out tmp/encryp.temp");
+                std::ifstream encryptn("tmp/encryp.temp", std::ifstream::binary);
                 std::string encrypted_r((std::istreambuf_iterator<char>(encryptn)), std::istreambuf_iterator<char>());
                 encryptn.close();
                 my::send_http_response(bio.get(), encrypted_r);
@@ -398,10 +475,11 @@ int main()
                 request = my::receive_http_message(bio.get()); //number
                 printf("Got request:\n");           
                 std::vector<std::string> requestLines = splitStringBy(request, "\r\n");
-                std::cout << "sendmsg request. rand number receive is " << requestLines[5] << std::endl;
+                std::cout << "recvmsg request. rand number receive is " << requestLines[5] << std::endl;
                 if (requestLines[5] != r) {
                     //std::cout << "Number does not match! Fake identity!!!" << std::endl;
-                    my::send_http_response(bio.get(),"Fake identity");
+                    my::send_http_response(bio.get(),"fake-identity");
+                    clean();
                     continue;
                 }
                 else {
@@ -409,23 +487,39 @@ int main()
                 }
 
                 // TODO send recipient msg: if no, send no, continue
-                
-                std::ifstream f1("messages/key.bin.enc", std::ifstream::binary);
-                std::string kbe((std::istreambuf_iterator<char>(f1)), std::istreambuf_iterator<char>());
-                f1.close();
-                my::send_http_response(bio.get(),kbe);
+                std::string subname = exec("openssl x509 -noout -subject -in tmp/recipient.cert.pem");
+                std::string recipient_name = subname.substr(subname.rfind(" ") + 1);
+                int count = count_message_number("messages/" + recipient_name);
+                if (count == -1) {
+                    system(("mkdir messages/" + recipient_name).c_str());
+                    count = 0;
+                } // count cannot exceed 99999
 
-                std::ifstream f2("messages/id_mail.enc", std::ifstream::binary);
-                std::string ime((std::istreambuf_iterator<char>(f2)), std::istreambuf_iterator<char>());
-                f2.close();
-                my::send_http_response(bio.get(),ime);
+                if (count == 0) {
+                    my::send_http_response(bio.get(), "your-mailbox-is-empty");
+                }
+                else {
+                    std::string s_count = std::to_string(count - 1);
+                    std::string file_prefix = "messages/" + recipient_name + "/" + std::string(5 - s_count.length(), '0') + s_count + "/";
 
-                std::ifstream f3("messages/signature.sign", std::ifstream::binary);
-                std::string ss((std::istreambuf_iterator<char>(f3)), std::istreambuf_iterator<char>());
-                f3.close();
-                my::send_http_response(bio.get(),ss);
+                    std::ifstream f1(file_prefix + "key.bin.enc", std::ifstream::binary);
+                    std::string kbe((std::istreambuf_iterator<char>(f1)), std::istreambuf_iterator<char>());
+                    f1.close();
+                    my::send_http_response(bio.get(), kbe);
 
-                // TODO: delete msgs already sent
+                    std::ifstream f2(file_prefix + "id_mail.enc", std::ifstream::binary);
+                    std::string ime((std::istreambuf_iterator<char>(f2)), std::istreambuf_iterator<char>());
+                    f2.close();
+                    my::send_http_response(bio.get(), ime);
+
+                    std::ifstream f3(file_prefix + "signature.sign", std::ifstream::binary);
+                    std::string ss((std::istreambuf_iterator<char>(f3)), std::istreambuf_iterator<char>());
+                    f3.close();
+                    my::send_http_response(bio.get(), ss);
+
+                    system(("rm -r " + file_prefix).c_str());
+                }
+                clean();
             }
         } catch (const std::exception& ex) {
             printf("Worker exited with exception:\n%s\n", ex.what());

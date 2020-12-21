@@ -222,16 +222,15 @@ namespace my {
         BIO_flush(bio);
     }
 
-    void check_recipient_cert(const std::string & loc) {
+    void check_response(const std::string & loc, std::string s_error) {
         std::ifstream f(loc);
         std::string s;
         f >> s;
         f.close();
-        if (s == "Fake") {
-            std::cout << "Fake identity!" << std::endl;
+        if (s == s_error) {
+            std::cout << s_error << std::endl;
             exit(1);
         }
-        std::cout << "Identity confirmed!" << std::endl;
     }
 
     SSL *get_ssl(BIO *bio)
