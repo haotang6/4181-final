@@ -290,6 +290,7 @@ int main()
                     password_db[paramMap["username"]] = hashedPassword;
                     my::save_password_database(password_db);
                     my::sign_certificate(paramMap["username"], "tmp/" + paramMap["username"] + ".csr.pem");
+                    std::cout << "../ca/intermediate/certs/" + paramMap["username"] + ".cert.pem" << "\n";
                     my::send_http_response(bio.get(),
                         my::read_certificate("../ca/intermediate/certs/" + paramMap["username"] + ".cert.pem"));
                 }
