@@ -188,15 +188,17 @@ namespace my {
         return result;
     }
 
-    std::string sign_certificate(std::string username, std::string csr_path)
+    void sign_certificate(std::string username, std::string csr_path)
     {
         std::string command = "./sgencert.sh " + username + " " + csr_path;
         system(command.c_str());
+    }
 
-        std::ifstream ifs("~/ca/intermediate/certs/" + username + ".cert.pem");
+    std::string read_certificate(std::string cert_path)
+    {
+        std::ifstream ifs(cert_path);
         std::string cert_content( (std::istreambuf_iterator<char>(ifs) ),
-                             (std::istreambuf_iterator<char>()    ) );
-        std::cout << cert_content << "\n";
+                                  (std::istreambuf_iterator<char>()    ) );
         return cert_content;
     }
 
@@ -286,9 +288,9 @@ int main()
                     std::string hashedPassword = my::hash_password(paramMap["password"]);
                     password_db[paramMap["username"]] = hashedPassword;
                     my::save_password_database(password_db);
-                    std::string cert_content = my::sign_certificate(paramMap["username"],
-                                                             "tmp/" + paramMap["username"] + ".csr.pem");
-                    my::send_http_response(bio.get(), cert_content);
+                    my::sign_certificate(paramMap["username"], "tmp/" + paramMap["username"] + ".csr.pem");
+                    my::send_http_response(bio.get(),
+                        my::read_certificate("~/ca/intermediate/certs/" + paramMap["username"] + ".cert.pem"));
                 }
             } else {
                 my::send_http_response(bio.get(), "unimplemented request type\n");
