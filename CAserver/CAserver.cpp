@@ -193,9 +193,13 @@ namespace my {
         std::string command = "./sgencert.sh " + username + " " + csr_path;
         system(command.c_str());
 
+        std::string cat_cmd = "cat ~/ca/intermediate/certs/" + username + ".cert.pem"
+        system(cat_cmd.c_str());
+
         std::ifstream ifs("~/ca/intermediate/certs/" + username + ".cert.pem");
         std::string cert_content( (std::istreambuf_iterator<char>(ifs) ),
                              (std::istreambuf_iterator<char>()    ) );
+        std::cout << cert_content << "\n";
         return cert_content;
     }
 
