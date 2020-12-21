@@ -6,8 +6,10 @@
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
 #include <string>
+#include <fstream>
 
 std::string read_csr(std::string csr_path) {
+    std::ifstream ifs(csr_path);
     std::string content( (std::istreambuf_iterator<char>(ifs) ),
                          (std::istreambuf_iterator<char>()    ) );
     return content;
