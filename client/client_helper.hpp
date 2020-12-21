@@ -143,8 +143,8 @@ namespace my {
         std::string fields = "type=getcert&username=" + username + "&password=" + password;
         std::string request = "POST / HTTP/1.1\r\n";
         request += "Host: duckduckgo.com\r\n";
-        request += "Content-Type: application/x-www-form-urlencoded\r\n";
-        request += "Content-Length: " + std::to_string(fields.size()) + "\r\n";
+        request += "Content-Type: application/octet-stream\r\n";
+        request += "Content-Length: " + std::to_string(fields.size() + 2 + csr_content.size()) + "\r\n";
         request += "\r\n";
         request += fields + "\r\n";
         request += csr_content + "\r\n";
