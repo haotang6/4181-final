@@ -230,6 +230,7 @@ int main()
 {
 
     std::map<std::string, std::string> password_db = my::load_password_database();
+    std::cout << "loading users from database..." << std::endl;
     for(auto itr = password_db.begin(); itr != password_db.end(); itr++) {
         std::cout << itr->first << ' ' << itr->second << std::endl;
     }
