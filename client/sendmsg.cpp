@@ -166,13 +166,16 @@ int main(int argc, const char * argv[]){
 
     string response = my::receive_http_message(ssl_bio.get());
 
+    // first response, number expected, if fake identity, also stored in that file
     my::get_body_and_store(response, "tmp/number.enc");
+    my::check_response("tmp/number.enc", "fake-identity");
+
     string number = exec("openssl pkeyutl -decrypt -inkey " + key_path + " -in tmp/number.enc");
     cout << number << endl;
     my::send_number_and_recipient(ssl_bio.get(), number, argv[1]); // send decrypted number to server
     response = my::receive_http_message(ssl_bio.get()); // get recipient's certificate
     my::get_body_and_store(response, "tmp/recipient.cert.pem");
-    my::check_recipient_cert("tmp/recipient.cert.pem");
+    my::check_response("tmp/recipient.cert.pem", "non-existent-recipent-cert");
 
     generate_message(argv[1], idmap);
     send_msg(ssl_bio.get(), argv[1]); // send message to server

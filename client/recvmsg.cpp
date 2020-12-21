@@ -164,7 +164,8 @@ int main(){
     response = my::receive_http_message(ssl_bio.get()); // get key.enc
     //cout << response << endl;
     my::get_body_and_store(response, "tmp/sav.key.bin.enc");
-    my::check_recipient_cert("tmp/sav.key.bin.enc");
+    my::check_response("tmp/sav.key.bin.enc", "fake-identity");
+    my::check_response("tmp/sav.key.bin.enc", "your-mailbox-is-empty");
 
     response = my::receive_http_message(ssl_bio.get()); // get id_mail.enc
     //cout << response << endl;
