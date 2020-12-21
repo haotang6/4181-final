@@ -32,62 +32,8 @@ string exec(const string& cmd) {
     return result;
 }
 
-void get_body_and_store(const string & response, const string & loc) {
-    //cout << response << endl;
-    stringstream ss(response);
-    string temp;
-    getline(ss,temp);
-    getline(ss,temp);
-    getline(ss,temp);
-    ofstream rbody(loc.c_str(), ofstream::binary);
-    rbody << ss.rdbuf();
-    rbody.close();
-}
-
-void check_recipient_cert(const string & loc) {
-    ifstream f(loc);
-    string s;
-    f >> s;
-    f.close();
-    if (s == "Fake") {
-        cout << "Fake identity!" << endl;
-        exit(1);
-    }
-    cout << "Identity confirmed!" << endl;
-}
-
-string generate_header(int bodylen) {
-    string request = "POST / HTTP/1.1\r\n";
-    request += "Host: duckduckgo.com\r\n";
-    request += "Content-Type: application/octet-stream\r\n";
-    request += "Content-Length: " + to_string(bodylen) + "\r\n";
-    request += "\r\n";
-    return request;
-}
-
-void send_certificate(BIO *bio) {
-    ifstream cert(cert_path, ifstream::binary);
-    string c((istreambuf_iterator<char>(cert)), istreambuf_iterator<char>());
-    cert.close();
-    string fields = "type=sendmsg&cert=" + c;
-    string request = generate_header(fields.size());
-    request += fields + "\r\n";
-    request += "\r\n";
-    BIO_write(bio, request.data(), request.size());
-    BIO_flush(bio);
-}
-
-void send_number_and_recipient(BIO *bio, const string & number, string recipient) {
-    string fields = number + "&" + recipient;
-    string request = generate_header(fields.size());
-    request += fields + "\r\n";
-    request += "\r\n";
-    BIO_write(bio, request.data(), request.size());
-    BIO_flush(bio);
-}
-
 void send_request(BIO *bio, const string & msg) {
-    string request = generate_header(msg.size());
+    string request = my::generate_header(msg.size());
     request += msg + "\r\n\r\n";
     BIO_write(bio, request.data(), request.size());
     BIO_flush(bio);
@@ -130,7 +76,7 @@ void generate_message(string username, unordered_map<string, int>& idmap) {
     if (!idmap.count(username)) idmap[username] = 0;
     ofstream out("tmp/id_mail.enc", ofstream::binary);
     ifstream message("tmp/cert_msg.enc", ifstream::binary);
-    out << ++idmap[username] << endl << message.rdbuf() << endl;
+    out << ++idmap[username] << endl << message.rdbuf();
     message.close();
     out.close();
 
@@ -216,17 +162,17 @@ int main(int argc, const char * argv[]){
     
     /***************** connection established ***********************/
 
-    send_certificate(ssl_bio.get()); // send certificate to server
+    my::send_certificate(ssl_bio.get(), cert_path, "sendmsg"); // send certificate to server
 
     string response = my::receive_http_message(ssl_bio.get());
 
-    get_body_and_store(response, "tmp/number.enc");
+    my::get_body_and_store(response, "tmp/number.enc");
     string number = exec("openssl pkeyutl -decrypt -inkey " + key_path + " -in tmp/number.enc");
     cout << number << endl;
-    send_number_and_recipient(ssl_bio.get(), number, argv[1]); // send decrypted number to server
+    my::send_number_and_recipient(ssl_bio.get(), number, argv[1]); // send decrypted number to server
     response = my::receive_http_message(ssl_bio.get()); // get recipient's certificate
-    get_body_and_store(response, "tmp/recipient.cert.pem");
-    check_recipient_cert("tmp/recipient.cert.pem");
+    my::get_body_and_store(response, "tmp/recipient.cert.pem");
+    my::check_recipient_cert("tmp/recipient.cert.pem");
 
     generate_message(argv[1], idmap);
     send_msg(ssl_bio.get(), argv[1]); // send message to server

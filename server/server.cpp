@@ -372,6 +372,53 @@ int main()
                 msg3 << requestLines[5];
                 msg3.close();
                 my::send_http_response(bio.get(),"ok");
+            } else if (paramMap["type"].compare("recvmsg") == 0) {
+                std::cout << "sendmsg request. certificate get." << std::endl;
+                //TODO: check certificate
+
+                std::string r = std::to_string(rand());  // need to be checked the same!
+                std::cout << "sendmsg request. rand number sent is " << r << std::endl;
+                //TODO: change the certificate
+                std::ofstream f("num.temp", std::ofstream::binary);
+                f << r;
+                f.close();
+                //TODO: use recipient's pubkey 
+                system("openssl pkeyutl -encrypt -pubin -inkey ../client/bob.pubkey.pem -in num.temp -out encryp.temp");
+                std::ifstream encryptn("encryp.temp", std::ifstream::binary);
+                std::string encrypted_r((std::istreambuf_iterator<char>(encryptn)), std::istreambuf_iterator<char>());
+                encryptn.close();
+                my::send_http_response(bio.get(), encrypted_r);
+
+                // get number
+                request = my::receive_http_message(bio.get()); //number
+                printf("Got request:\n");           
+                std::vector<std::string> requestLines = splitStringBy(request, "\r\n");
+                std::cout << "sendmsg request. rand number receive is " << requestLines[5] << std::endl;
+                if (requestLines[5] != r) {
+                    //std::cout << "Number does not match! Fake identity!!!" << std::endl;
+                    my::send_http_response(bio.get(),"Fake identity");
+                    continue;
+                }
+                else {
+                    std::cout << "Number match! Identity confirmed!!!" << std::endl;
+                }
+
+                // TODO send recipient msg: if no, send no, continue
+
+                std::ifstream f1("messages/key.bin.enc", std::ifstream::binary);
+                std::string kbe((std::istreambuf_iterator<char>(f1)), std::istreambuf_iterator<char>());
+                f1.close();
+                my::send_http_response(bio.get(),kbe);
+
+                std::ifstream f2("messages/id_mail.enc", std::ifstream::binary);
+                std::string ime((std::istreambuf_iterator<char>(f2)), std::istreambuf_iterator<char>());
+                f2.close();
+                my::send_http_response(bio.get(),ime);
+
+                std::ifstream f3("messages/signature.sign", std::ifstream::binary);
+                std::string ss((std::istreambuf_iterator<char>(f3)), std::istreambuf_iterator<char>());
+                f3.close();
+                my::send_http_response(bio.get(),ss);
             }
         } catch (const std::exception& ex) {
             printf("Worker exited with exception:\n%s\n", ex.what());

@@ -3,9 +3,12 @@
 #include <string>
 #include <fstream>
 #include <unordered_map>
-#include <memory>
-#include <stdexcept>
-#include <array>
+#include "client_helper.hpp"
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+#include <openssl/x509v3.h>
+#include <sstream>
 
 using namespace std;
 
@@ -25,7 +28,7 @@ string exec(const string& cmd) {
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
         result += buffer.data();
     }
-    result.pop_back();
+    if (result.back()=='\n') result.pop_back();
     return result;
 }
 
@@ -81,6 +84,7 @@ void check_and_decrypt(string key_file, string id_mail_file, string sign_file,
     if (!idmap.count(sendername)) idmap[sendername]=0;
     if (++idmap[sendername] != stoi(id)) {
         cout << "id corrupted. " << endl;
+        // TODO: return
         //return;
     }
 
@@ -107,8 +111,73 @@ int main(){
     }
     idfile.close();
 
+    /***** establish connection to the server*****/
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    SSL_library_init();
+    SSL_load_error_strings();
+#endif
+
+    /* Set up the SSL context */
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    auto ctx = my::UniquePtr<SSL_CTX>(SSL_CTX_new(SSLv23_client_method()));
+#else
+    auto ctx = my::UniquePtr<SSL_CTX>(SSL_CTX_new(TLS_client_method()));
+#endif
+
+    // edit this to trust a local certificate
+    // if (SSL_CTX_set_default_verify_paths(ctx.get()) != 1) {
+    // use the ca's certificate here
+    if (SSL_CTX_load_verify_locations(ctx.get(), "ca-chain.cert.pem", nullptr) != 1) {
+        my::print_errors_and_exit("Error setting up trust store");
+    }
+
+    // Change this line to connects to real duckduckgo
+    // auto bio = my::UniquePtr<BIO>(BIO_new_connect("duckduckgo.com:443"));
+    auto bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"));
+    if (bio == nullptr) {
+        my::print_errors_and_exit("Error in BIO_new_connect");
+    }
+    if (BIO_do_connect(bio.get()) <= 0) {
+        my::print_errors_and_exit("Error in BIO_do_connect");
+    }
+    auto ssl_bio = std::move(bio)
+                   | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
+    ;
+    SSL_set_tlsext_host_name(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+    SSL_set1_host(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+#endif
+    if (BIO_do_handshake(ssl_bio.get()) <= 0) {
+        my::print_errors_and_exit("Error in BIO_do_handshake");
+    }
+    my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
+
+    /***************** connection established ***********************/
+
+    my::send_certificate(ssl_bio.get(), cert_path, "recvmsg");
+
+    string response = my::receive_http_message(ssl_bio.get());
+    my::get_body_and_store(response, "tmp/sav.number.enc");
+    string number = exec("openssl pkeyutl -decrypt -inkey " + key_path + " -in tmp/sav.number.enc");
+    cout << number << endl;
+    my::send_number(ssl_bio.get(), number); // send decrypted number to server
+    
+    response = my::receive_http_message(ssl_bio.get()); // get key.enc
+    //cout << response << endl;
+    my::get_body_and_store(response, "tmp/sav.key.bin.enc");
+    my::check_recipient_cert("tmp/sav.key.bin.enc");
+
+    response = my::receive_http_message(ssl_bio.get()); // get id_mail.enc
+    //cout << response << endl;
+    my::get_body_and_store(response, "tmp/sav.id_mail.enc");    
+
+    response = my::receive_http_message(ssl_bio.get()); // get key.enc
+    //cout << response << endl;
+    my::get_body_and_store(response, "tmp/sav.signature.sign");  
+
     // get 3 files: key.bin.enc id_mail.enc signature.sign
-    check_and_decrypt("tmp/key.bin.enc", "tmp/id_mail.enc", "tmp/signature.sign", idmap);
+    check_and_decrypt("tmp/sav.key.bin.enc", "tmp/sav.id_mail.enc", "tmp/sav.signature.sign", idmap);
 
     // update the id file
     ofstream idfile2(id_path.c_str(), ofstream::binary);

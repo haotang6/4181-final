@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
@@ -165,6 +167,68 @@ namespace my {
 
         BIO_write(bio, request.data(), request.size());
         BIO_flush(bio);
+    }
+
+    std::string generate_header(int bodylen) {
+        std::string request = "POST / HTTP/1.1\r\n";
+        request += "Host: duckduckgo.com\r\n";
+        request += "Content-Type: application/octet-stream\r\n";
+        request += "Content-Length: " + std::to_string(bodylen) + "\r\n";
+        request += "\r\n";
+        return request;
+    }
+
+    void send_certificate(BIO *bio, const std::string & cert_path, const std::string & request_type) {
+        std::ifstream cert(cert_path.c_str(), std::ios::binary);
+        std::string c((std::istreambuf_iterator<char>(cert)), std::istreambuf_iterator<char>());
+        cert.close();
+        std::string fields = "type=" + request_type + "&cert=" + c;
+        std::string request = generate_header(fields.size());
+        request += fields + "\r\n";
+        request += "\r\n";
+        BIO_write(bio, request.data(), request.size());
+        BIO_flush(bio);
+    }
+
+    void get_body_and_store(const std::string & response, const std::string & loc) {
+        std::stringstream ss(response);
+        std::string temp;
+        std::getline(ss,temp);
+        std::getline(ss,temp);
+        std::getline(ss,temp);
+        std::ofstream rbody(loc.c_str(), std::ofstream::binary);
+        rbody << ss.rdbuf();
+        rbody.close();
+    }
+
+    void send_number(BIO *bio, const std::string & number) {
+        std::string fields = number;
+        std::string request = my::generate_header(fields.size());
+        request += fields + "\r\n";
+        request += "\r\n";
+        BIO_write(bio, request.data(), request.size());
+        BIO_flush(bio);
+    }
+
+    void send_number_and_recipient(BIO *bio, const std::string & number, const std::string & recipient) {
+        std::string fields = number + "&" + recipient;
+        std::string request = my::generate_header(fields.size());
+        request += fields + "\r\n";
+        request += "\r\n";
+        BIO_write(bio, request.data(), request.size());
+        BIO_flush(bio);
+    }
+
+    void check_recipient_cert(const std::string & loc) {
+        std::ifstream f(loc);
+        std::string s;
+        f >> s;
+        f.close();
+        if (s == "Fake") {
+            std::cout << "Fake identity!" << std::endl;
+            exit(1);
+        }
+        std::cout << "Identity confirmed!" << std::endl;
     }
 
     SSL *get_ssl(BIO *bio)
