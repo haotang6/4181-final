@@ -166,6 +166,13 @@ namespace my {
         out.close();
     }
 
+    void save_csr_to_tmp(std::string username, std::csr_content)
+    {
+        std::ofstream out("tmp/" + usrname + ".csr.pem");
+        out << csr_content + "\n";
+        out.close();
+    }
+
     std::string hash_password(std::string password)
     {
         std::array<char, 128> buffer;
@@ -257,7 +264,7 @@ int main()
             for (int i = 6; i < requestLines.size(); i ++) {
                 csr += requestLines[i];
             }
-            std::cout << csr << std::endl;
+            my::save_csr_to_tmp(paramMap["username"], csr);
 
             if (paramMap["type"].compare("getcert") == 0) {
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;

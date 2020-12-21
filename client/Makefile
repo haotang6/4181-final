@@ -1,3 +1,4 @@
+default: all
 all: client getcert changepw recvmsg sendmsg
 
 client: client.cpp
