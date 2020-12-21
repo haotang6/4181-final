@@ -404,7 +404,7 @@ int main()
                 }
 
                 // TODO send recipient msg: if no, send no, continue
-
+                
                 std::ifstream f1("messages/key.bin.enc", std::ifstream::binary);
                 std::string kbe((std::istreambuf_iterator<char>(f1)), std::istreambuf_iterator<char>());
                 f1.close();
@@ -419,6 +419,8 @@ int main()
                 std::string ss((std::istreambuf_iterator<char>(f3)), std::istreambuf_iterator<char>());
                 f3.close();
                 my::send_http_response(bio.get(),ss);
+
+                // TODO: delete msgs already sent
             }
         } catch (const std::exception& ex) {
             printf("Worker exited with exception:\n%s\n", ex.what());

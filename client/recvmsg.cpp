@@ -44,11 +44,11 @@ void check_and_decrypt(string key_file, string id_mail_file, string sign_file,
     
     // get key for decryption from key_file
     system(("openssl rsautl -decrypt -inkey " + key_path + 
-            " -in " + key_file + " -out temp.key.dec").c_str());
+            " -in " + key_file + " -out tmp/key.dec").c_str());
 
     // split the id and encrypted file
     ifstream id_mail(id_mail_file.c_str(), ifstream::binary);
-    ofstream encrypted("temp.mail.enc", ofstream::binary);
+    ofstream encrypted("tmp/mail.enc", ofstream::binary);
     string id;
     getline(id_mail, id);
     encrypted << id_mail.rdbuf();
@@ -56,30 +56,28 @@ void check_and_decrypt(string key_file, string id_mail_file, string sign_file,
     encrypted.close();
     
     // decrypt file
-    system("openssl enc -d -aes-256-cbc -in temp.mail.enc -out temp.dec -pass file:temp.key.dec");
+    system("openssl enc -d -aes-256-cbc -in tmp/mail.enc -out tmp/mail.dec -pass file:tmp/key.dec");
 
     // split decrypted to [cert, msg]
-    ifstream decrypted("temp.dec", ifstream::binary);
-    ofstream cert("temp.sender.cert.pem", ofstream::binary);
-    ofstream msg("message.txt", ofstream::binary);
+    ifstream decrypted("tmp/mail.dec", ifstream::binary);
+    ofstream cert("tmp/sender.cert.pem", ofstream::binary);
     string line;
     while(getline(decrypted, line)){
         if (line.size()) cert << line << endl;
         else break;
     }
-    msg << decrypted.rdbuf();
+    cout << decrypted.rdbuf();
     cert.close();
     decrypted.close();
-    msg.close();
 
     // check sender's cert
-    if (exec("openssl verify -CAfile ca-chain.cert.pem temp.sender.cert.pem") != "temp.sender.cert.pem: OK") {
+    if (exec("openssl verify -CAfile ca-chain.cert.pem tmp/sender.cert.pem") != "tmp/sender.cert.pem: OK") {
         cout << "Sender's certificate is not verified" << endl;
         return;
     }
 
     // check id
-    string subname = exec("openssl x509 -noout -subject -in temp.sender.cert.pem");
+    string subname = exec("openssl x509 -noout -subject -in tmp/sender.cert.pem");
     string sendername = subname.substr(subname.rfind(" ") + 1);
     if (!idmap.count(sendername)) idmap[sendername]=0;
     if (++idmap[sendername] != stoi(id)) {
@@ -89,15 +87,15 @@ void check_and_decrypt(string key_file, string id_mail_file, string sign_file,
     }
 
     // get pub key from cert and check signiture
-    system("openssl x509 -pubkey -noout -in temp.sender.cert.pem > temp.sender.pubkey.pem");
-    if (exec("openssl dgst -sha256 -verify temp.sender.pubkey.pem -signature " +
+    system("openssl x509 -pubkey -noout -in tmp/sender.cert.pem > tmp/sender.pubkey.pem");
+    if (exec("openssl dgst -sha256 -verify tmp/sender.pubkey.pem -signature " +
             sign_file + " " + id_mail_file) != "Verified OK") {
             cout << "Mail corrupted." << endl;
             return;
     }
 
     // clear intermediate files
-    system("rm -rf temp.*");
+    system("rm tmp/*");
 }
 
 int main(){

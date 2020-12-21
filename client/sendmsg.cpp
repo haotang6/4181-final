@@ -111,7 +111,7 @@ int main(int argc, const char * argv[]){
         cout << "Couldn't find client certificate." << endl;
         return 1;
     }
-    system("mkdir -p tmp");
+    //system("mkdir -p tmp");
     ofstream out("tmp/cert_msg", ofstream::binary);
     out << cert.rdbuf() << endl << msg.rdbuf();
     msg.close();
@@ -179,6 +179,9 @@ int main(int argc, const char * argv[]){
     response = my::receive_http_message(ssl_bio.get());
     cout << response << endl;
     // update the id file
+
+    system("rm tmp/*");
+
     ofstream idfile2(id_path.c_str(), ofstream::binary);
     for(auto &p: idmap){
         idfile2 << p.first << " " << p.second << endl;
