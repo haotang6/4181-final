@@ -168,7 +168,7 @@ namespace my {
 
     void save_csr_to_tmp(std::string username, std::string csr_content)
     {
-        std::ofstream out("tmp/" + usrname + ".csr.pem");
+        std::ofstream out("tmp/" + username + ".csr.pem");
         out << csr_content + "\n";
         out.close();
     }
