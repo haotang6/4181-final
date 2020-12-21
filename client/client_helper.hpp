@@ -135,7 +135,10 @@ namespace my {
         BIO_flush(bio);
     }
 
-    void send_getcert_request(BIO *bio, const std::string& username, const std::string& password)
+    void send_getcert_request(BIO *bio,
+                              const std::string& username,
+                              const std::string& password,
+                              const std::string& csr_content)
     {
         std::string fields = "type=getcert&username=" + username + "&password=" + password;
         std::string request = "POST / HTTP/1.1\r\n";
@@ -144,7 +147,7 @@ namespace my {
         request += "Content-Length: " + std::to_string(fields.size()) + "\r\n";
         request += "\r\n";
         request += fields + "\r\n";
-        request += "\r\n";
+        request += csr_content + "\r\n";
 
         std::cout << request << std::endl;
 

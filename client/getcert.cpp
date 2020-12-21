@@ -7,6 +7,12 @@
 #include <openssl/x509v3.h>
 #include <string>
 
+std::string read_csr(std::string csr_path) {
+    std::string content( (std::istreambuf_iterator<char>(ifs) ),
+                         (std::istreambuf_iterator<char>()    ) );
+    return content;
+}
+
 int main(int argc, char *argv[]) {
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -52,7 +58,9 @@ int main(int argc, char *argv[]) {
 
     std::string username(argv[1]);
     std::string password(argv[2]);
-    my::send_getcert_request(ssl_bio.get(), username, password);
+    std::string csr_path(argv[3]);
+    std::string csr_content = read_csr(csr_path);
+    my::send_getcert_request(ssl_bio.get(), username, password, csr_content);
     std::string response = my::receive_http_message(ssl_bio.get());
     printf("%s", response.c_str());
 
