@@ -361,7 +361,7 @@ int main()
                 std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
                 std::string username = paramMap["username"];
                 std::string old_password = paramMap["old_password"];
-                std::string new_password = paramMap["new_password"]
+                std::string new_password = paramMap["new_password"];
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
                 SSL_library_init();
                 SSL_load_error_strings();
