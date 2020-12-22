@@ -9,4 +9,4 @@ chmod 400 $1.key.pem
 openssl req -config ../ca/intermediate/openssl.cnf \
       -key $1.key.pem \
       -new -sha256 -out $1.csr.pem \
-      -subj "/C=US/ST=California/L=LA/O=georgia/OU=georgia/CN=georgia"
+      -subj "/C=US/ST=California/L=LA/O=$1/OU=$1$(date '+%s')/CN=$1"

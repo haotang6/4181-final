@@ -173,11 +173,11 @@ namespace my {
         out.close();
     }
 
-    std::string hash_password(std::string password)
+    std::string hash_password(std::string salt, std::string password)
     {
         std::array<char, 128> buffer;
         std::string result;
-        std::string command = "mkpasswd --method=sha512crypt --salt=5Q91hyuzJvXqU67r \"" + password + "\"";
+        std::string command = "mkpasswd --method=sha512crypt --salt=" + salt + " \"" + password + "\"";
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
         if (!pipe) {
             throw std::runtime_error("popen() failed!");
@@ -224,6 +224,11 @@ std::vector<std::string> splitStringBy(std::string s, std::string delimiter) {
     }
     splitted.push_back(unparsed);
     return splitted;
+}
+
+std::string getSailtFromHash(std::string hashedPw) {
+    std::vector<std::string> tokens = splitStringBy(hashedPw, "$");
+    return tokens[2];
 }
 
 int main()
@@ -280,7 +285,6 @@ int main()
                 csr += requestLines[i];
             }
             my::save_csr_to_tmp(paramMap["username"], csr);
-            std::string hashedPassword = my::hash_password(paramMap["password"]);
 
             if (paramMap["type"].compare("getcert") == 0) {
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
@@ -288,16 +292,21 @@ int main()
                 if (password_db.find(paramMap["username"]) == password_db.end()) {
                     std::cout << paramMap["username"] + " not in system, rejected" << std::endl;
                     my::send_http_response(bio.get(), "user not in system.\n");
-                } else if (password_db[paramMap["username"]].compare(hashedPassword) != 0) {
-                    std::cout << "hashed pw from database: " << password_db[paramMap["username"]] << std::endl;
-                    std::cout << "hashed provided pw: " << hashedPassword << std::endl;
-                    std::cout << "wrong password supplied." << std::endl;
-                    my::send_http_response(bio.get(), "incorrect password.\n");
                 } else {
-                    my::sign_certificate(paramMap["username"], "tmp/" + paramMap["username"] + ".csr.pem");
-                    std::cout << "../ca/intermediate/certs/" + paramMap["username"] + ".cert.pem" << "\n";
-                    my::send_http_response(bio.get(),
-                        my::read_certificate("../ca/intermediate/certs/" + paramMap["username"] + ".cert.pem"));
+                    std::string salt = getSailtFromHash(password_db[paramMap["username"]]);
+                    std::string hashedPassword = my::hash_password(salt, paramMap["password"]);
+                    if (password_db[paramMap["username"]].compare(hashedPassword) != 0) {
+                        std::cout << "hashed pw from database: " << password_db[paramMap["username"]] << std::endl;
+                        std::cout << "hashed provided pw: " << hashedPassword << std::endl;
+                        std::cout << "wrong password supplied." << std::endl;
+                        my::send_http_response(bio.get(), "incorrect password.\n");
+                    } else {
+                        my::sign_certificate(paramMap["username"], "tmp/" + paramMap["username"] + ".csr.pem");
+                        std::cout << "../ca/intermediate/certs/" + paramMap["username"] + ".cert.pem" << "\n";
+                        my::send_http_response(bio.get(),
+                                               my::read_certificate("../ca/intermediate/certs/" + paramMap["username"] +
+                                                                    ".cert.pem"));
+                    }
                 }
             } else if (paramMap["type"].compare("changepw") == 0) {
                 std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
