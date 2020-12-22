@@ -289,6 +289,8 @@ int main()
                     std::cout << paramMap["username"] + " not in system, rejected" << std::endl;
                     my::send_http_response(bio.get(), "user not in system.\n");
                 } else if (password_db[paramMap["username"]].compare(hashedPassword) != 0) {
+                    std::cout << "hashed pw from database: " << password_db[paramMap["username"]] << std::endl;
+                    std::cout << "hashed provided pw: " << hashedPassword << std::endl;
                     std::cout << "wrong password supplied." << std::endl;
                     my::send_http_response(bio.get(), "incorrect password.\n");
                 } else {
