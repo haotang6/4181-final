@@ -7,6 +7,7 @@
 #include <openssl/x509v3.h>
 #include <string>
 #include <fstream>
+#include <map>
 
 std::string read_csr(std::string csr_path) {
     std::ifstream ifs(csr_path);
@@ -36,6 +37,11 @@ int main(int argc, char *argv[]) {
     if (SSL_CTX_load_verify_locations(ctx.get(), "ca-chain.cert.pem", nullptr) != 1) {
         my::print_errors_and_exit("Error setting up trust store");
     }
+
+    // load config
+    std::map<std::string, std::string> config_map = my::load_config();
+    std::string server_url = config_map["server_ip"] + ":" + config_map["server_port"];
+    std::cout << server_url << std::endl;
 
     // Change this line to connects to real duckduckgo
     // auto bio = my::UniquePtr<BIO>(BIO_new_connect("duckduckgo.com:443"));

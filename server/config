@@ -1,0 +1,3 @@
+server_port: 8080
+CAserver_ip: localhost
+CAserver_port: 10086
