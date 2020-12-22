@@ -141,7 +141,7 @@ namespace my {
     std::map<std::string, std::string> load_password_database()
     {
         std::map<std::string, std::string> password_db;
-        std::ifstream in("../ca/user_passwords");
+        std::ifstream in("user_passwords.txt");
         std::string str;
         while (std::getline(in, str))
         {
@@ -156,7 +156,7 @@ namespace my {
 
     void save_password_database(std::map<std::string, std::string> password_db)
     {
-        std::ofstream out("../ca/user_passwords");
+        std::ofstream out("user_passwords.txt");
         for (auto const& x: password_db) {
             out << x.first;
             out << " ";
@@ -173,11 +173,11 @@ namespace my {
         out.close();
     }
 
-    std::string hash_password(std::string password)
+    std::string hash_password(std::string salt, std::string password)
     {
         std::array<char, 128> buffer;
         std::string result;
-        std::string command = "mkpasswd --method=sha512crypt --salt=5Q91hyuzJvXqU67r \"" + password + "\"";
+        std::string command = "mkpasswd --method=sha512crypt --salt=" + salt + " \"" + password + "\"";
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
         if (!pipe) {
             throw std::runtime_error("popen() failed!");
@@ -185,6 +185,7 @@ namespace my {
         while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
             result += buffer.data();
         }
+        if (result.back()=='\n') result.pop_back();
         return result;
     }
 
@@ -226,13 +227,18 @@ std::vector<std::string> splitStringBy(std::string s, std::string delimiter) {
     return splitted;
 }
 
+std::string getSailtFromHash(std::string hashedPw) {
+    std::vector<std::string> tokens = splitStringBy(hashedPw, "$");
+    return tokens[2];
+}
+
 int main()
 {
 
     std::map<std::string, std::string> password_db = my::load_password_database();
     std::cout << "loading users from database..." << std::endl;
     for(auto itr = password_db.begin(); itr != password_db.end(); itr++) {
-        std::cout << itr->first << ' ' << itr->second << std::endl;
+        std::cout << itr->first << std::endl;
     }
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -284,30 +290,45 @@ int main()
             if (paramMap["type"].compare("getcert") == 0) {
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
                 std::cout << "provided password " + paramMap["password"] << std::endl;
-                if (password_db.find(paramMap["username"]) != password_db.end()) {
-                    my::send_http_response(bio.get(), "user already in system.\n");
+                if (password_db.find(paramMap["username"]) == password_db.end()) {
+                    std::cout << paramMap["username"] + " not in system, rejected" << std::endl;
+                    my::send_http_response(bio.get(), "user not in system.\n");
                 } else {
-                    std::string hashedPassword = my::hash_password(paramMap["password"]);
-                    password_db[paramMap["username"]] = hashedPassword;
-                    my::save_password_database(password_db);
-                    my::sign_certificate(paramMap["username"], "tmp/" + paramMap["username"] + ".csr.pem");
-                    std::cout << "../ca/intermediate/certs/" + paramMap["username"] + ".cert.pem" << "\n";
-                    my::send_http_response(bio.get(),
-                        my::read_certificate("../ca/intermediate/certs/" + paramMap["username"] + ".cert.pem"));
+                    std::string salt = getSailtFromHash(password_db[paramMap["username"]]);
+                    std::string hashedPassword = my::hash_password(salt, paramMap["password"]);
+                    if (password_db[paramMap["username"]].compare(hashedPassword) != 0) {
+                        std::cout << "hashed pw from database: " << password_db[paramMap["username"]] << std::endl;
+                        std::cout << "length: " << password_db[paramMap["username"]].size() << std::endl;
+                        std::cout << "hashed provided pw: " << hashedPassword << std::endl;
+                        std::cout << "length: " << hashedPassword.size() << std::endl;
+                        std::cout << "wrong password supplied." << std::endl;
+                        my::send_http_response(bio.get(), "incorrect password.\n");
+                    } else {
+                        my::sign_certificate(paramMap["username"], "tmp/" + paramMap["username"] + ".csr.pem");
+                        std::cout << "../ca/intermediate/certs/" + paramMap["username"] + ".cert.pem" << "\n";
+                        my::send_http_response(bio.get(),
+                                               my::read_certificate("../ca/intermediate/certs/" + paramMap["username"] +
+                                                                    ".cert.pem"));
+                    }
                 }
             } else if (paramMap["type"].compare("changepw") == 0) {
                 std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
                 std::cout << "provided old password " + paramMap["old_password"] << std::endl;
-                std::string hashedOldPw = my::hash_password(paramMap["old_password"]);
-                if (password_db.find(paramMap["username"]) == password_db.end() ||
-                    password_db[paramMap["username"]] != hashedOldPw) {
-                    std::cout << "change password failed." << std::endl;
+                if (password_db.find(paramMap["username"]) == password_db.end()) {
+                    std::cout << "user not in system." << std::endl;
                     my::send_http_response(bio.get(), "failed request.\n");
                 } else {
-                    std::cout << "change password success." << std::endl;
-                    password_db[paramMap["username"]] = my::hash_password(paramMap["new_password"]);
-                    my::save_password_database(password_db);
-                    my::send_http_response(bio.get(), "password updated.\n");
+                    std::string salt = getSailtFromHash(password_db[paramMap["username"]]);
+                    std::string hashedOldPw = my::hash_password(salt, paramMap["old_password"]);
+                    if (hashedOldPw.compare(password_db[paramMap["username"]]) != 0) {
+                        std::cout << "old password incorrect." << std::endl;
+                        my::send_http_response(bio.get(), "failed request.\n");
+                    } else {
+                        std::cout << "change password success." << std::endl;
+                        password_db[paramMap["username"]] = my::hash_password(salt, paramMap["new_password"]);
+                        my::save_password_database(password_db);
+                        my::send_http_response(bio.get(), "password updated.\n");
+                    }
                 }
             } else {
                 my::send_http_response(bio.get(), "unimplemented request type\n");
