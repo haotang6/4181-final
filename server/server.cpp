@@ -286,7 +286,7 @@ int main()
     }
 
     std::map<std::string, std::string> configMap = load_config();
-    std::string CAserver_url = configMap["CAserver_ip"] + ":" + configMap["CAserver_port"]
+    std::string CAserver_url = configMap["CAserver_ip"] + ":" + configMap["CAserver_port"];
 
     auto accept_bio = my::UniquePtr<BIO>(BIO_new_accept(configMap["server_port"].c_str()));
     if (BIO_do_accept(accept_bio.get()) <= 0) {
