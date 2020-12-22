@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 #include <assert.h>
+#include <map>
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
@@ -289,6 +290,25 @@ namespace my {
     // because we set it up in main().
     (void)expected_hostname;
 #endif
+    }
+
+    std::map<std::string, std::string> load_config()
+    {
+        std::map<std::string, std::string> config_map;
+        std::ifstream in("config");
+        std::string str;
+        while (std::getline(in, str))
+        {
+            if(str.size() > 0)
+            {
+                size_t pos = str.find(": ");
+                std::string key = str.substr(0, pos);
+                std::string value = str.substr(pos + 2, str.size() - pos - 2);
+                if (value.back()=='\n') value.pop_back();
+                config_map[key] = value;
+            }
+        }
+        return config_map;
     }
 
 } // namespace my
