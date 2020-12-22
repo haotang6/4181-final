@@ -413,6 +413,8 @@ int main()
                 std::string response = my::receive_http_message(CAssl_bio.get());
                 std::cout << response << std::endl;
 
+                my::send_http_response(bio.get(), response);
+
             } else if (paramMap["type"].compare("sendmsg") == 0) {
                 std::cout << "sendmsg request. certificate get." << std::endl;
                 //check certificate
