@@ -297,7 +297,9 @@ int main()
                     std::string hashedPassword = my::hash_password(salt, paramMap["password"]);
                     if (password_db[paramMap["username"]].compare(hashedPassword) != 0) {
                         std::cout << "hashed pw from database: " << password_db[paramMap["username"]] << std::endl;
+                        std::cout << "length: " << password_db[paramMap["username"]].size() << std::endl;
                         std::cout << "hashed provided pw: " << hashedPassword << std::endl;
+                        std::cout << "length: " << hashedPassword.size() << std::endl;
                         std::cout << "wrong password supplied." << std::endl;
                         my::send_http_response(bio.get(), "incorrect password.\n");
                     } else {
