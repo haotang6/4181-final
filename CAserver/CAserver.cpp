@@ -185,6 +185,7 @@ namespace my {
         while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
             result += buffer.data();
         }
+        if (result.back()=='\n') result.pop_back();
         return result;
     }
 
