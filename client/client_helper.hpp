@@ -302,9 +302,9 @@ namespace my {
             if(str.size() > 0)
             {
                 size_t pos = str.find(": ");
-                key = str.substr(0, pos);
-                value = str.substr(pos + 2, str.size() - pos - 2);
-                if (result.back()=='\n') result.pop_back();
+                std::string key = str.substr(0, pos);
+                std::string value = str.substr(pos + 2, str.size() - pos - 2);
+                if (value.back()=='\n') value.pop_back();
                 config_map[key] = value;
             }
         }
