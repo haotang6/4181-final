@@ -280,15 +280,16 @@ int main()
                 csr += requestLines[i];
             }
             my::save_csr_to_tmp(paramMap["username"], csr);
+            std::string hashedPassword = my::hash_password(paramMap["password"]);
 
             if (paramMap["type"].compare("getcert") == 0) {
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
                 std::cout << "provided password " + paramMap["password"] << std::endl;
                 if (password_db.find(paramMap["username"]) == password_db.end()) {
                     my::send_http_response(bio.get(), "user not in system.\n");
+                } else if (password_db[paramMap["username"]].compare(hashedPassword) != 0) {
+                    my::send_http_response(bio.get(), "incorrect password.\n");
                 } else {
-                    std::string hashedPassword = my::hash_password(paramMap["password"]);
-                    password_db[paramMap["username"]] = hashedPassword;
                     my::save_password_database(password_db);
                     my::sign_certificate(paramMap["username"], "tmp/" + paramMap["username"] + ".csr.pem");
                     std::cout << "../ca/intermediate/certs/" + paramMap["username"] + ".cert.pem" << "\n";
