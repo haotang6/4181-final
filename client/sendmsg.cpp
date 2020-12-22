@@ -145,7 +145,7 @@ int main(int argc, const char * argv[]){
 
     // Change this line to connects to real duckduckgo
     // auto bio = my::UniquePtr<BIO>(BIO_new_connect("duckduckgo.com:443"));
-    auto bio = my::UniquePtr<BIO>(BIO_new_connect(server_url));
+    auto bio = my::UniquePtr<BIO>(BIO_new_connect(server_url.c_str()));
     if (bio == nullptr) {
         my::print_errors_and_exit("Error in BIO_new_connect");
     }
