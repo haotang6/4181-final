@@ -17,12 +17,6 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
-/*
- * install requirements: sudo apt-get install -y libssl-dev
- * compile: g++ -o server -std=c++14 server.cpp -lssl -lcrypto
- * test with command=-line: curl --cacert mailserver.cert.pem --resolve duckduckgo.com:8080:127.0.0.1 https://duckduckgo.com:8080/
- */
-
 namespace my {
 
 template<class T> struct DeleterOf;
@@ -233,6 +227,25 @@ std::string exec(const std::string& cmd) {
     return result;
 }
 
+std::map<std::string, std::string> load_config()
+{
+    std::map<std::string, std::string> config_map;
+    std::ifstream in("config");
+    std::string str;
+    while (std::getline(in, str))
+    {
+        if(str.size() > 0)
+        {
+            size_t pos = str.find(": ");
+            std::string key = str.substr(0, pos);
+            std::string value = str.substr(pos + 2, str.size() - pos - 2);
+            if (value.back()=='\n') value.pop_back();
+            config_map[key] = value;
+        }
+    }
+    return config_map;
+}
+
 int count_message_number(std::string path) {
     DIR* dirp = opendir(path.c_str());
     int count = -2;
@@ -272,9 +285,12 @@ int main()
         my::print_errors_and_exit("Error loading server private key");
     }
 
-    auto accept_bio = my::UniquePtr<BIO>(BIO_new_accept("8080"));
+    std::map<std::string, std::string> configMap = load_config();
+    std::string CAserver_url = configMap["CAserver_ip"] + ":" + configMap["CAserver_port"]
+
+    auto accept_bio = my::UniquePtr<BIO>(BIO_new_accept(configMap["server_port"].c_str()));
     if (BIO_do_accept(accept_bio.get()) <= 0) {
-        my::print_errors_and_exit("Error in BIO_do_accept (binding to port 8080)");
+        my::print_errors_and_exit("Error in BIO_do_accept");
     }
 
     static auto shutdown_the_socket = [fd = BIO_get_fd(accept_bio.get(), nullptr)]() {
@@ -323,7 +339,7 @@ int main()
                 if (SSL_CTX_load_verify_locations(ctx.get(), "ca-chain.cert.pem", nullptr) != 1) {
                     my::print_errors_and_exit("Error setting up trust store");
                 }
-                auto CAbio = my::UniquePtr<BIO>(BIO_new_connect("localhost:10086"));
+                auto CAbio = my::UniquePtr<BIO>(BIO_new_connect(CAserver_url.c_str()));
                 if (CAbio == nullptr) {
                     my::print_errors_and_exit("Error in BIO_new_connect");
                 }
@@ -388,7 +404,7 @@ int main()
                 if (SSL_CTX_load_verify_locations(ctx.get(), "ca-chain.cert.pem", nullptr) != 1) {
                     my::print_errors_and_exit("Error setting up trust store");
                 }
-                auto CAbio = my::UniquePtr<BIO>(BIO_new_connect("localhost:10086"));
+                auto CAbio = my::UniquePtr<BIO>(BIO_new_connect(CAserver_url.c_str()));
                 if (CAbio == nullptr) {
                     my::print_errors_and_exit("Error in BIO_new_connect");
                 }
