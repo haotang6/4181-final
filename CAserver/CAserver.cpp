@@ -141,7 +141,7 @@ namespace my {
     std::map<std::string, std::string> load_password_database()
     {
         std::map<std::string, std::string> password_db;
-        std::ifstream in("../ca/user_passwords");
+        std::ifstream in("user_passwords.txt");
         std::string str;
         while (std::getline(in, str))
         {
@@ -156,7 +156,7 @@ namespace my {
 
     void save_password_database(std::map<std::string, std::string> password_db)
     {
-        std::ofstream out("../ca/user_passwords");
+        std::ofstream out("user_passwords.txt");
         for (auto const& x: password_db) {
             out << x.first;
             out << " ";
@@ -232,7 +232,7 @@ int main()
     std::map<std::string, std::string> password_db = my::load_password_database();
     std::cout << "loading users from database..." << std::endl;
     for(auto itr = password_db.begin(); itr != password_db.end(); itr++) {
-        std::cout << itr->first << ' ' << itr->second << std::endl;
+        std::cout << itr->first << std::endl;
     }
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -284,8 +284,8 @@ int main()
             if (paramMap["type"].compare("getcert") == 0) {
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
                 std::cout << "provided password " + paramMap["password"] << std::endl;
-                if (password_db.find(paramMap["username"]) != password_db.end()) {
-                    my::send_http_response(bio.get(), "user already in system.\n");
+                if (password_db.find(paramMap["username"]) == password_db.end()) {
+                    my::send_http_response(bio.get(), "user not in system.\n");
                 } else {
                     std::string hashedPassword = my::hash_password(paramMap["password"]);
                     password_db[paramMap["username"]] = hashedPassword;
