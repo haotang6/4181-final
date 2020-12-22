@@ -244,7 +244,7 @@ int count_message_number(std::string path) {
 void clean() {
     // delete "tmp/*"
     // Next line (may) create a bug.  
-    system("rm tmp/*");
+    // system("rm tmp/*");
 }
 
 int main()
@@ -421,12 +421,25 @@ int main()
                 std::ofstream sender_cert("tmp/sender.cert.pem", std::ofstream::binary);
                 sender_cert << paramMap["cert"];
                 sender_cert.close();
+
                 if (exec("openssl verify -CAfile ca-chain.cert.pem tmp/sender.cert.pem") != "tmp/sender.cert.pem: OK") {
                     std::cout << "Sender's certificate is not verified" << std::endl;
                     my::send_http_response(bio.get(),"fake-identity");
                     clean();
                     continue;
                 }
+
+                std::string subname = exec("openssl x509 -noout -subject -in tmp/sender.cert.pem");
+                std::string sender_name = subname.substr(subname.rfind(" ") + 1);
+                // check if sender cert exists
+                std::string sender_cert_path = "certs/"+sender_name+".cert.pem";
+                std::ifstream f_check_sender(sender_cert_path, std::ifstream::binary);
+                if(!f_check_sender || exec("cmp certs/" + sender_name + ".cert.pem tmp/sender.cert.pem") != "") {
+                    my::send_http_response(bio.get(),"fake-identity");
+                    clean();
+                    continue;
+                }
+
                 std::string r = std::to_string(rand());  // need to be checked the same!
                 std::cout << "sendmsg request. rand number sent is " << r << std::endl;
                 std::ofstream f("tmp/num.temp", std::ofstream::binary);
@@ -518,13 +531,24 @@ int main()
                 std::ofstream recipient_cert("tmp/recipient.cert.pem", std::ofstream::binary);
                 recipient_cert << paramMap["cert"];
                 recipient_cert.close();
+
                 if (exec("openssl verify -CAfile ca-chain.cert.pem tmp/recipient.cert.pem") != "tmp/recipient.cert.pem: OK") {
                     std::cout << "Recipient's certificate is not verified" << std::endl;
                     my::send_http_response(bio.get(),"fake-identity");
                     clean();
                     continue;
                 }
-
+                //check if same as exist file
+                std::string subname = exec("openssl x509 -noout -subject -in tmp/recipient.cert.pem");
+                std::string recipient_name = subname.substr(subname.rfind(" ") + 1);
+                std::string recipient_cert_path = "certs/"+recipient_name+".cert.pem";
+                std::ifstream f_check_recipient(recipient_cert_path, std::ifstream::binary);
+                if(!f_check_recipient || exec("cmp certs/" + recipient_name + ".cert.pem tmp/recipient.cert.pem") != "") {
+                    my::send_http_response(bio.get(),"fake-identity");
+                    clean();
+                    continue;
+                }
+                
                 std::string r = std::to_string(rand());  // need to be checked the same!
                 std::cout << "recvmsg request. rand number sent is " << r << std::endl;
 
@@ -555,8 +579,6 @@ int main()
                 }
 
                 // TODO send recipient msg: if no, send no, continue
-                std::string subname = exec("openssl x509 -noout -subject -in tmp/recipient.cert.pem");
-                std::string recipient_name = subname.substr(subname.rfind(" ") + 1);
                 int count = count_message_number("messages/" + recipient_name);
                 if (count == -1) {
                     system(("mkdir messages/" + recipient_name).c_str());

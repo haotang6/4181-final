@@ -157,6 +157,7 @@ int main(){
 
     string response = my::receive_http_message(ssl_bio.get());
     my::get_body_and_store(response, "tmp/sav.number.enc");
+    my::check_response("tmp/sav.number.enc", "fake-identity");
     string number = exec("openssl pkeyutl -decrypt -inkey " + key_path + " -in tmp/sav.number.enc");
     cout << number << endl;
     my::send_number(ssl_bio.get(), number); // send decrypted number to server
