@@ -435,7 +435,11 @@ int main()
                 std::cout << "sendmsg request. certificate get." << std::endl;
                 //check certificate
                 std::ofstream sender_cert("tmp/sender.cert.pem", std::ofstream::binary);
-                sender_cert << paramMap["cert"];
+                std::string cert_content;
+                for (int i = 6; i < requestLines.size(); i++) {
+                    cert_content += requestLines[i];
+                }
+                sender_cert << cert_content;
                 sender_cert.close();
 
                 if (exec("openssl verify -CAfile ca-chain.cert.pem tmp/sender.cert.pem") != "tmp/sender.cert.pem: OK") {
@@ -545,7 +549,11 @@ int main()
                 std::cout << "recvmsg request. certificate get." << std::endl;
                 //check certificate
                 std::ofstream recipient_cert("tmp/recipient.cert.pem", std::ofstream::binary);
-                recipient_cert << paramMap["cert"];
+                std::string cert_content;
+                for (int i = 6; i < requestLines.size(); i++) {
+                    cert_content += requestLines[i];
+                }
+                recipient_cert << cert_content;
                 recipient_cert.close();
 
                 if (exec("openssl verify -CAfile ca-chain.cert.pem tmp/recipient.cert.pem") != "tmp/recipient.cert.pem: OK") {

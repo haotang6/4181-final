@@ -190,10 +190,10 @@ namespace my {
         std::ifstream cert(cert_path.c_str(), std::ios::binary);
         std::string c((std::istreambuf_iterator<char>(cert)), std::istreambuf_iterator<char>());
         cert.close();
-        std::string fields = "type=" + request_type + "&cert=" + c;
-        std::string request = generate_header(fields.size());
+        std::string fields = "type=" + request_type;
+        std::string request = generate_header(fields.size() + 2 + c.size());
         request += fields + "\r\n";
-        request += "\r\n";
+        request += c + "\r\n\r\n";
         BIO_write(bio, request.data(), request.size());
         BIO_flush(bio);
     }
