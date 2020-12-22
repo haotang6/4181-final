@@ -156,17 +156,16 @@ int main(){
     my::send_certificate(ssl_bio.get(), cert_path, "recvmsg");
 
     string response = my::receive_http_message(ssl_bio.get());
-    my::get_body_and_store(response, "tmp/sav.number.enc");
-    my::check_response("tmp/sav.number.enc", "fake-identity");
+    std::string error_code = my::get_body_and_store(response, "tmp/sav.number.enc");
+    my::check_response("tmp/sav.number.enc", error_code);
     string number = exec("openssl pkeyutl -decrypt -inkey " + key_path + " -in tmp/sav.number.enc");
     cout << number << endl;
     my::send_number(ssl_bio.get(), number); // send decrypted number to server
     
     response = my::receive_http_message(ssl_bio.get()); // get key.enc
     //cout << response << endl;
-    my::get_body_and_store(response, "tmp/sav.key.bin.enc");
-    my::check_response("tmp/sav.key.bin.enc", "fake-identity");
-    my::check_response("tmp/sav.key.bin.enc", "your-mailbox-is-empty");
+    error_code = my::get_body_and_store(response, "tmp/sav.key.bin.enc");
+    my::check_response("tmp/sav.key.bin.enc", error_code);
 
     response = my::receive_http_message(ssl_bio.get()); // get id_mail.enc
     //cout << response << endl;

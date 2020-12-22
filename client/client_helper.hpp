@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <assert.h>
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
@@ -198,15 +199,31 @@ namespace my {
         BIO_flush(bio);
     }
 
-    void get_body_and_store(const std::string & response, const std::string & loc) {
+    std::string get_error_code_from_header(const std::string & header) {
+        std::size_t fir_ws = header.find(" "); 
+        std::size_t sec_ws = header.find(" ", fir_ws + 1); 
+        return header.substr(fir_ws + 1, sec_ws - (fir_ws + 1));
+    }
+
+    std::string get_error_code_from_file(const std::string & response) {
         std::stringstream ss(response);
         std::string temp;
         std::getline(ss,temp);
+        return get_error_code_from_header(temp);
+    }
+
+    // Return the error_code 
+    std::string get_body_and_store(const std::string & response, const std::string & loc) {
+        std::stringstream ss(response);
+        std::string temp;
+        std::getline(ss,temp);
+        std::string ret = get_error_code_from_header(temp);
         std::getline(ss,temp);
         std::getline(ss,temp);
         std::ofstream rbody(loc.c_str(), std::ofstream::binary);
         rbody << ss.rdbuf();
         rbody.close();
+        return ret;
     }
 
     void send_number(BIO *bio, const std::string & number) {
@@ -227,13 +244,14 @@ namespace my {
         BIO_flush(bio);
     }
 
-    void check_response(const std::string & loc, std::string s_error) {
+    void check_response(const std::string & loc, std::string error_code) {
         std::ifstream f(loc);
         std::string s;
         f >> s;
         f.close();
-        if (s == s_error) {
-            std::cout << s_error << std::endl;
+        if (error_code != "200") {
+            std::cout << "HTTP error code: " << error_code << std::endl;
+            std::cout << s << std::endl;
             exit(1);
         }
     }
