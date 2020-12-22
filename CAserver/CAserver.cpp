@@ -281,13 +281,12 @@ int main()
                 paramMap[kv[0]] = kv[1];
             }
 
-            std::string csr = "";
-            for (int i = 6; i < requestLines.size(); i ++) {
-                csr += requestLines[i];
-            }
-            my::save_csr_to_tmp(paramMap["username"], csr);
-
             if (paramMap["type"].compare("getcert") == 0) {
+                std::string csr = "";
+                for (int i = 6; i < requestLines.size(); i ++) {
+                    csr += requestLines[i];
+                }
+                my::save_csr_to_tmp(paramMap["username"], csr);
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
                 std::cout << "provided password " + paramMap["password"] << std::endl;
                 if (password_db.find(paramMap["username"]) == password_db.end()) {
@@ -312,6 +311,11 @@ int main()
                     }
                 }
             } else if (paramMap["type"].compare("changepw") == 0) {
+                std::string csr = "";
+                for (int i = 6; i < requestLines.size(); i ++) {
+                    csr += requestLines[i];
+                }
+                my::save_csr_to_tmp(paramMap["username"], csr);
                 std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
                 std::cout << "provided old password " + paramMap["old_password"] << std::endl;
                 if (password_db.find(paramMap["username"]) == password_db.end()) {
@@ -324,10 +328,13 @@ int main()
                         std::cout << "old password incorrect." << std::endl;
                         my::send_http_response(bio.get(), "failed request.\n");
                     } else {
+                        my::sign_certificate(paramMap["username"], "tmp/" + paramMap["username"] + ".csr.pem");
                         std::cout << "change password success." << std::endl;
                         password_db[paramMap["username"]] = my::hash_password(salt, paramMap["new_password"]);
                         my::save_password_database(password_db);
-                        my::send_http_response(bio.get(), "password updated.\n");
+                        my::send_http_response(bio.get(),
+                                               my::read_certificate("../ca/intermediate/certs/" + paramMap["username"] +
+                                                                    ".cert.pem"));
                     }
                 }
             } else {

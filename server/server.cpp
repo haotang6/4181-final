@@ -404,23 +404,32 @@ int main()
                 }
                 my::verify_the_certificate(my::get_ssl(CAssl_bio.get()), "luckluckgo.com");
 
+                std::string csr = "";
+                for (int i = 6; i < requestLines.size(); i ++) {
+                    csr += requestLines[i];
+                }
+
                 std::string fields = "type=changepw&username=" + username + "&old_password=" + old_password + "&new_password=";
                 fields += new_password;
                 std::string request = "POST / HTTP/1.1\r\n";
                 request += "Host: duckduckgo.com\r\n";
                 request += "Content-Type: application/octet-stream\r\n";
-                request += "Content-Length: " + std::to_string(fields.size()) + "\r\n";
+                request += "Content-Length: " + std::to_string(fields.size() + 2 + csr.size()) + "\r\n";
                 request += "\r\n";
                 request += fields + "\r\n";
-                request += "\r\n";
+                request += csr + "\r\n";
 
                 BIO_write(CAssl_bio.get(), request.data(), request.size());
                 BIO_flush(CAssl_bio.get());
-
                 std::string response = my::receive_http_message(CAssl_bio.get());
-                std::cout << response << std::endl;
-
-                my::send_http_response(bio.get(), response);
+                size_t pos = response.find("-----BEGIN CERTIFICATE-----");
+                if (pos != std::string::npos) {
+                    std::string certificate = response.substr(pos, response.size() - pos);
+                    my::write_user_certificate(paramMap["username"], certificate);
+                    my::send_http_response(bio.get(), certificate);
+                } else {
+                    my::send_http_response(bio.get(), "failed request");
+                }
 
             } else if (paramMap["type"].compare("sendmsg") == 0) {
                 std::cout << "sendmsg request. certificate get." << std::endl;
