@@ -290,7 +290,6 @@ int main()
                 } else if (password_db[paramMap["username"]].compare(hashedPassword) != 0) {
                     my::send_http_response(bio.get(), "incorrect password.\n");
                 } else {
-                    my::save_password_database(password_db);
                     my::sign_certificate(paramMap["username"], "tmp/" + paramMap["username"] + ".csr.pem");
                     std::cout << "../ca/intermediate/certs/" + paramMap["username"] + ".cert.pem" << "\n";
                     my::send_http_response(bio.get(),
