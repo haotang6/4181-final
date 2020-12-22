@@ -311,16 +311,21 @@ int main()
             } else if (paramMap["type"].compare("changepw") == 0) {
                 std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
                 std::cout << "provided old password " + paramMap["old_password"] << std::endl;
-                std::string hashedOldPw = my::hash_password(paramMap["old_password"]);
-                if (password_db.find(paramMap["username"]) == password_db.end() ||
-                    password_db[paramMap["username"]] != hashedOldPw) {
-                    std::cout << "change password failed." << std::endl;
+                if (password_db.find(paramMap["username"]) == password_db.end()) {
+                    std::cout << "user not in system." << std::endl;
                     my::send_http_response(bio.get(), "failed request.\n");
                 } else {
-                    std::cout << "change password success." << std::endl;
-                    password_db[paramMap["username"]] = my::hash_password(paramMap["new_password"]);
-                    my::save_password_database(password_db);
-                    my::send_http_response(bio.get(), "password updated.\n");
+                    std::string salt = getSailtFromHash(password_db[paramMap["username"]]);
+                    std::string hashedOldPw = my::hash_password(salt, paramMap["old_password"]);
+                    if (hashedOldPw.compare(password_db[paramMap["username"]]) != 0) {
+                        std::cout << "old password incorrect." << std::endl;
+                        my::send_http_response(bio.get(), "failed request.\n");
+                    } else {
+                        std::cout << "change password success." << std::endl;
+                        password_db[paramMap["username"]] = my::hash_password(salt, paramMap["new_password"]);
+                        my::save_password_database(password_db);
+                        my::send_http_response(bio.get(), "password updated.\n");
+                    }
                 }
             } else {
                 my::send_http_response(bio.get(), "unimplemented request type\n");
