@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
         std::ofstream out(username + ".cert.pem");
         out << certificate;
         out.close();
-        std::cout << "successfully got certificate, saved at " + username + ".cert.pem";
+        std::cout << "successfully got certificate, saved at " + username + ".cert.pem" << std::endl;
     } else {
         std::cout << "failed to get certificate" << std::endl;
     }
