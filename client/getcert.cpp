@@ -66,4 +66,13 @@ int main(int argc, char *argv[]) {
     std::string response = my::receive_http_message(ssl_bio.get());
     printf("%s", response.c_str());
 
+    size_t pos = response.find("-----BEGIN CERTIFICATE-----");
+    if (pos != std::string::npos) {
+        std::string certificate = response.substr(pos, response.size() - pos);
+        std::ofstream out(username + ".cert.pem");
+        out << certificate_str;
+        out.close();
+    } else {
+        std::cout << "failed to get certificate" << std::endl;
+    }
 }
