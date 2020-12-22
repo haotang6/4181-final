@@ -286,8 +286,10 @@ int main()
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
                 std::cout << "provided password " + paramMap["password"] << std::endl;
                 if (password_db.find(paramMap["username"]) == password_db.end()) {
+                    std::cout << paramMap["username"] + " not in system, rejected" << std::endl;
                     my::send_http_response(bio.get(), "user not in system.\n");
                 } else if (password_db[paramMap["username"]].compare(hashedPassword) != 0) {
+                    std::cout << "wrong password supplied." << std::endl;
                     my::send_http_response(bio.get(), "incorrect password.\n");
                 } else {
                     my::sign_certificate(paramMap["username"], "tmp/" + paramMap["username"] + ".csr.pem");
