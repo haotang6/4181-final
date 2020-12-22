@@ -13,3 +13,17 @@ sendmsg: sendmsg.cpp client_helper.hpp
 	g++ -o sendmsg -std=c++14 sendmsg.cpp client_helper.hpp -lssl -lcrypto
 clean:
 	rm client getcert changepw recvmsg sendmsg
+
+install:getcert changepw recvmsg sendmsg
+	mkdir ../client-$(USER)
+	mkdir ../client-$(USER)/client_files
+	mkdir ../client-$(USER)/tmp
+	cp getcert ../client-$(USER)
+	cp changepw ../client-$(USER)
+	cp recvmsg ../client-$(USER)
+	cp sendmsg ../client-$(USER)
+	cp ca-chain.cert.pem ../client-$(USER)
+	cp cgencsr.sh ../client-$(USER)
+	cp test.txt ../client-$(USER)
+
+	

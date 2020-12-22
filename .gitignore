@@ -1,3 +1,10 @@
 .DS_Store
 .idea
 client/tmp/
+client/client_files/
+server/messages/
+server/certs/
+server/tmp/
+ca/
+client-*/
+CAserver/tmp/
