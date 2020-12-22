@@ -12,9 +12,9 @@
 
 using namespace std;
 
-const string cert_path = "bob.cert.pem";
-const string key_path = "bob.key.pem";
-const string id_path = "sender_id.txt";
+const string cert_path = "client_files/cert.pem";
+const string key_path = "client_files/key.pem";
+const string id_path = "client_files/sender_id.txt";
 
 // execute shell command and return the output
 string exec(const string& cmd) {
