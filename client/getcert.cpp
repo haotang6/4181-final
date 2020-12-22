@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     if (pos != std::string::npos) {
         std::string certificate = response.substr(pos, response.size() - pos);
         std::ofstream out(username + ".cert.pem");
-        out << certificate_str;
+        out << certificate;
         out.close();
     } else {
         std::cout << "failed to get certificate" << std::endl;
