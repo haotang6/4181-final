@@ -232,6 +232,25 @@ std::string getSailtFromHash(std::string hashedPw) {
     return tokens[2];
 }
 
+std::map<std::string, std::string> load_config()
+{
+    std::map<std::string, std::string> config_map;
+    std::ifstream in("config");
+    std::string str;
+    while (std::getline(in, str))
+    {
+        if(str.size() > 0)
+        {
+            size_t pos = str.find(": ");
+            std::string key = str.substr(0, pos);
+            std::string value = str.substr(pos + 2, str.size() - pos - 2);
+            if (value.back()=='\n') value.pop_back();
+            config_map[key] = value;
+        }
+    }
+    return config_map;
+}
+
 int main()
 {
 
@@ -257,9 +276,11 @@ int main()
         my::print_errors_and_exit("Error loading server private key");
     }
 
-    auto accept_bio = my::UniquePtr<BIO>(BIO_new_accept("10086"));
+    std::map<std::string, std::string> configMap = load_config();
+
+    auto accept_bio = my::UniquePtr<BIO>(BIO_new_accept(configMap["CAserver_port"].c_str()));
     if (BIO_do_accept(accept_bio.get()) <= 0) {
-        my::print_errors_and_exit("Error in BIO_do_accept (binding to port 10086)");
+        my::print_errors_and_exit("Error in BIO_do_accept");
     }
 
     static auto shutdown_the_socket = [fd = BIO_get_fd(accept_bio.get(), nullptr)]() {
