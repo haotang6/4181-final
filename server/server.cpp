@@ -143,9 +143,16 @@ std::string receive_http_message(BIO *bio)
     return headers + "\r\n" + body;
 }
 
-void send_http_response(BIO *bio, const std::string& body)
-{
+void send_http_response(BIO *bio, const std::string& body, int error_code=200)
+{   
     std::string response = "HTTP/1.1 200 OK\r\n";
+    if (error_code == 200); // do nothing
+    else if (error_code == 403) {
+        response = "HTTP/1.1 403 Forbidden\r\n";
+    }
+    else {
+        response = "HTTP/1.1 0 Unknown Error\r\n";
+    }
     response += "Content-Length: " + std::to_string(body.size()) + "\r\n";
     response += "\r\n";
 
@@ -355,7 +362,7 @@ int main()
                     my::write_user_certificate(paramMap["username"], certificate);
                     my::send_http_response(bio.get(), certificate);
                 } else {
-                    my::send_http_response(bio.get(), "failed request");
+                    my::send_http_response(bio.get(), "failed request", 403);
                 }
             } else if (paramMap["type"].compare("changepw") == 0) {
                 std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
@@ -424,7 +431,7 @@ int main()
 
                 if (exec("openssl verify -CAfile ca-chain.cert.pem tmp/sender.cert.pem") != "tmp/sender.cert.pem: OK") {
                     std::cout << "Sender's certificate is not verified" << std::endl;
-                    my::send_http_response(bio.get(),"fake-identity");
+                    my::send_http_response(bio.get(),"fake-identity", 403);
                     clean();
                     continue;
                 }
@@ -435,7 +442,7 @@ int main()
                 std::string sender_cert_path = "certs/"+sender_name+".cert.pem";
                 std::ifstream f_check_sender(sender_cert_path, std::ifstream::binary);
                 if(!f_check_sender || exec("cmp certs/" + sender_name + ".cert.pem tmp/sender.cert.pem") != "") {
-                    my::send_http_response(bio.get(),"fake-identity");
+                    my::send_http_response(bio.get(),"fake-identity", 403);
                     clean();
                     continue;
                 }
@@ -462,7 +469,7 @@ int main()
                 std::cout << "sendmsg request. rand number receive is " + para[0] << ", recipient is " << para[1] << std::endl;
                 if (para[0] != r) {
                     //std::cout << "Number does not match! Fake identity!!!" << std::endl;
-                    my::send_http_response(bio.get(),"fake-identity");
+                    my::send_http_response(bio.get(), "fake-identity", 403);
                     clean();
                     continue;
                 }
@@ -474,7 +481,7 @@ int main()
                 std::string recipient_cert_path = "certs/"+para[1]+".cert.pem";
                 std::ifstream f2(recipient_cert_path, std::ifstream::binary);
                 if(!f2) {
-                    my::send_http_response(bio.get(),"non-existent-recipent-cert");
+                    my::send_http_response(bio.get(),"non-existent-recipent-cert", 403);
                     clean();
                     continue;
                 }
@@ -534,7 +541,7 @@ int main()
 
                 if (exec("openssl verify -CAfile ca-chain.cert.pem tmp/recipient.cert.pem") != "tmp/recipient.cert.pem: OK") {
                     std::cout << "Recipient's certificate is not verified" << std::endl;
-                    my::send_http_response(bio.get(),"fake-identity");
+                    my::send_http_response(bio.get(),"fake-identity", 403);
                     clean();
                     continue;
                 }
@@ -544,7 +551,7 @@ int main()
                 std::string recipient_cert_path = "certs/"+recipient_name+".cert.pem";
                 std::ifstream f_check_recipient(recipient_cert_path, std::ifstream::binary);
                 if(!f_check_recipient || exec("cmp certs/" + recipient_name + ".cert.pem tmp/recipient.cert.pem") != "") {
-                    my::send_http_response(bio.get(),"fake-identity");
+                    my::send_http_response(bio.get(),"fake-identity", 403);
                     clean();
                     continue;
                 }
@@ -570,7 +577,7 @@ int main()
                 std::cout << "recvmsg request. rand number receive is " << requestLines[5] << std::endl;
                 if (requestLines[5] != r) {
                     //std::cout << "Number does not match! Fake identity!!!" << std::endl;
-                    my::send_http_response(bio.get(),"fake-identity");
+                    my::send_http_response(bio.get(),"fake-identity", 403);
                     clean();
                     continue;
                 }
@@ -586,7 +593,7 @@ int main()
                 } // count cannot exceed 99999
 
                 if (count == 0) {
-                    my::send_http_response(bio.get(), "your-mailbox-is-empty");
+                    my::send_http_response(bio.get(), "your-mailbox-is-empty", 403);
                 }
                 else {
                     std::string s_count = std::to_string(count - 1);
