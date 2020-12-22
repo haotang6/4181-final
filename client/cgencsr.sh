@@ -5,10 +5,10 @@ echo $1
 ts=$(date +%s.%N)
 echo $ts
 
-openssl genrsa -out $1.key.pem 2048
-chmod 400 $1.key.pem
+openssl genrsa -out client_files/key.pem 2048
+chmod 400 client_files/key.pem
 
 openssl req -config ../ca/intermediate/openssl.cnf \
-      -key $1.key.pem \
-      -new -sha256 -out $1.csr.pem \
+      -key client_files/key.pem \
+      -new -sha256 -out client_files/csr.pem \
       -subj "/C=US/ST=California/L=LA/O=$1/OU=$1.$ts/CN=$1"

@@ -188,7 +188,7 @@ void verify_the_certificate(SSL *ssl, const std::string& expected_hostname)
 
 void write_user_certificate(std::string username, std::string certificate_str)
 {
-    std::ofstream out("user_certificates/" + username + ".cert.pem");
+    std::ofstream out("certs/" + username + ".cert.pem");
     out << certificate_str;
     out.close();
 }

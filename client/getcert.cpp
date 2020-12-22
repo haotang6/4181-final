@@ -59,19 +59,19 @@ int main(int argc, char *argv[]) {
     my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
 
     std::string username(argv[1]);
+    system(("./cgencsr.sh "+username).c_str());
     std::string password(argv[2]);
-    std::string csr_path(argv[3]);
-    std::string csr_content = read_csr(csr_path);
+    std::string csr_content = read_csr("client_files/csr.pem");
     my::send_getcert_request(ssl_bio.get(), username, password, csr_content);
     std::string response = my::receive_http_message(ssl_bio.get());
 
     size_t pos = response.find("-----BEGIN CERTIFICATE-----");
     if (pos != std::string::npos) {
         std::string certificate = response.substr(pos, response.size() - pos);
-        std::ofstream out(username + ".cert.pem");
+        std::ofstream out("client_files/cert.pem");
         out << certificate;
         out.close();
-        std::cout << "successfully got certificate, saved at " + username + ".cert.pem" << std::endl;
+        std::cout << "successfully got certificate, saved at client_files/cert.pem" << std::endl;
     } else {
         std::cout << "failed to get certificate" << std::endl;
     }

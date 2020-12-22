@@ -60,10 +60,19 @@ int main(int argc, char *argv[]) {
     std::string username(argv[1]);
     std::string old_password(argv[2]);
     std::string new_password(argv[3]);
-    std::string csr_path(argv[4]);
-    std::string csr_content = read_csr(csr_path);
+    system(("./cgencsr.sh "+username).c_str());
+    std::string csr_content = read_csr("client_files/csr.pem");
     my::send_changepw_request(ssl_bio.get(), username, old_password, new_password, csr_content);
     std::string response = my::receive_http_message(ssl_bio.get());
-    printf("%s", response.c_str());
 
+    size_t pos = response.find("-----BEGIN CERTIFICATE-----");
+    if (pos != std::string::npos) {
+        std::string certificate = response.substr(pos, response.size() - pos);
+        std::ofstream out("client_files/cert.pem");
+        out << certificate;
+        out.close();
+        std::cout << "successfully got certificate, saved at client_files/cert.pem" << std::endl;
+    } else {
+        std::cout << "failed to get certificate" << std::endl;
+    }
 }
