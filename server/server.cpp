@@ -397,7 +397,7 @@ int main()
                 }
                 my::verify_the_certificate(my::get_ssl(CAssl_bio.get()), "luckluckgo.com");
 
-                std::string fields = "type=changepw&username=" + username + "&oldpassword=" + password + "&new_password=";
+                std::string fields = "type=changepw&username=" + username + "&old_password=" + old_password + "&new_password=";
                 fields += new_password;
                 std::string request = "POST / HTTP/1.1\r\n";
                 request += "Host: duckduckgo.com\r\n";
