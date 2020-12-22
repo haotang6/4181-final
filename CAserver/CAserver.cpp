@@ -281,13 +281,12 @@ int main()
                 paramMap[kv[0]] = kv[1];
             }
 
-            std::string csr = "";
-            for (int i = 6; i < requestLines.size(); i ++) {
-                csr += requestLines[i];
-            }
-            my::save_csr_to_tmp(paramMap["username"], csr);
-
             if (paramMap["type"].compare("getcert") == 0) {
+                std::string csr = "";
+                for (int i = 6; i < requestLines.size(); i ++) {
+                    csr += requestLines[i];
+                }
+                my::save_csr_to_tmp(paramMap["username"], csr);
                 std::cout << "getcert request received from user " << paramMap["username"] << std::endl;
                 std::cout << "provided password " + paramMap["password"] << std::endl;
                 if (password_db.find(paramMap["username"]) == password_db.end()) {
