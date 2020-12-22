@@ -51,8 +51,9 @@ int main(int argc, char *argv[]) {
     my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
 
     std::string username(argv[1]);
-    std::string password(argv[2]);
-    my::send_changepw_request(ssl_bio.get(), username, password);
+    std::string old_password(argv[2]);
+    std::string new_password(argv[3]);
+    my::send_changepw_request(ssl_bio.get(), username, old_password, new_password);
     std::string response = my::receive_http_message(ssl_bio.get());
     printf("%s", response.c_str());
 

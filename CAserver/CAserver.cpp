@@ -294,6 +294,16 @@ int main()
                     my::send_http_response(bio.get(),
                         my::read_certificate("../ca/intermediate/certs/" + paramMap["username"] + ".cert.pem"));
                 }
+            } else if (paramMap["type"].compare("changepw") == 0) {
+                std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
+                std::string hashedOldPw = my::hash_password(paramMap["old_password"]);
+                if (password_db.find(paramMap["username"]) == password_db.end() ||
+                    password_db[paramMap["username"]] != hashedOldPw) {
+                    my::send_http_response(bio.get(), "failed request.\n");
+                } else {
+                    password_db[paramMap["username"]] = my::hash_password(paramMap["new_password"]);
+                    my::send_http_response(bio.get(), "password updated.\n");
+                }
             } else {
                 my::send_http_response(bio.get(), "unimplemented request type\n");
             }

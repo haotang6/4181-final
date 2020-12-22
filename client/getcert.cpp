@@ -64,7 +64,6 @@ int main(int argc, char *argv[]) {
     std::string csr_content = read_csr(csr_path);
     my::send_getcert_request(ssl_bio.get(), username, password, csr_content);
     std::string response = my::receive_http_message(ssl_bio.get());
-    printf("%s", response.c_str());
 
     size_t pos = response.find("-----BEGIN CERTIFICATE-----");
     if (pos != std::string::npos) {
@@ -72,6 +71,7 @@ int main(int argc, char *argv[]) {
         std::ofstream out(username + ".cert.pem");
         out << certificate;
         out.close();
+        std::cout << "successfully got certificate, saved at " + username + ".cert.pem";
     } else {
         std::cout << "failed to get certificate" << std::endl;
     }

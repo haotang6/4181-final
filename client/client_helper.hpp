@@ -155,12 +155,16 @@ namespace my {
         BIO_flush(bio);
     }
 
-    void send_changepw_request(BIO *bio, const std::string& username, const std::string& password)
+    void send_changepw_request(BIO *bio,
+                               const std::string& username,
+                               const std::string& old_password,
+                               const std::string& new_password)
     {
-        std::string fields = "type=changepw&username=" + username + "&password=" + password;
+        std::string fields = "type=changepw&username=" + username + "&oldpassword=" + password + "&new_password=";
+        fields += new_password;
         std::string request = "POST / HTTP/1.1\r\n";
         request += "Host: duckduckgo.com\r\n";
-        request += "Content-Type: application/x-www-form-urlencoded\r\n";
+        request += "Content-Type: application/octet-stream\r\n";
         request += "Content-Length: " + std::to_string(fields.size()) + "\r\n";
         request += "\r\n";
         request += fields + "\r\n";

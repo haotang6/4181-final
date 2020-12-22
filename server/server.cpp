@@ -359,7 +359,60 @@ int main()
                 }
             } else if (paramMap["type"].compare("changepw") == 0) {
                 std::cout << "changepw request received from user " << paramMap["username"] << std::endl;
-                my::send_http_response(bio.get(), "okay cool\n");
+                std::string username = paramMap["username"];
+                std::string old_password = paramMap["old_password"];
+                std::string new_password = paramMap["new_password"]
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+                SSL_library_init();
+                SSL_load_error_strings();
+#endif
+
+                /* Set up the SSL context */
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+                auto ctx = my::UniquePtr<SSL_CTX>(SSL_CTX_new(SSLv23_client_method()));
+#else
+                auto ctx = my::UniquePtr<SSL_CTX>(SSL_CTX_new(TLS_client_method()));
+#endif
+
+                // edit this to trust a local certificate
+                // if (SSL_CTX_set_default_verify_paths(ctx.get()) != 1) {
+                // use the ca's certificate here
+                if (SSL_CTX_load_verify_locations(ctx.get(), "ca-chain.cert.pem", nullptr) != 1) {
+                    my::print_errors_and_exit("Error setting up trust store");
+                }
+                auto CAbio = my::UniquePtr<BIO>(BIO_new_connect("localhost:10086"));
+                if (CAbio == nullptr) {
+                    my::print_errors_and_exit("Error in BIO_new_connect");
+                }
+                if (BIO_do_connect(CAbio.get()) <= 0) {
+                    my::print_errors_and_exit("Error in BIO_do_connect");
+                }
+                auto CAssl_bio = std::move(CAbio)
+                                 | my::UniquePtr<BIO>(BIO_new_ssl(ctx.get(), 1))
+                ;
+                SSL_set_tlsext_host_name(my::get_ssl(CAssl_bio.get()), "luckluckgo.com");
+                if (BIO_do_handshake(CAssl_bio.get()) <= 0) {
+                    my::print_errors_and_exit("Error in BIO_do_handshake");
+                }
+                my::verify_the_certificate(my::get_ssl(CAssl_bio.get()), "luckluckgo.com");
+
+                std::string fields = "type=changepw&username=" + username + "&oldpassword=" + password + "&new_password=";
+                fields += new_password;
+                std::string request = "POST / HTTP/1.1\r\n";
+                request += "Host: duckduckgo.com\r\n";
+                request += "Content-Type: application/octet-stream\r\n";
+                request += "Content-Length: " + std::to_string(fields.size()) + "\r\n";
+                request += "\r\n";
+                request += fields + "\r\n";
+                request += "\r\n";
+
+                BIO_write(CAssl_bio.get(), request.data(), request.size());
+                BIO_flush(CAssl_bio.get());
+
+                std::string response = my::receive_http_message(CAssl_bio.get());
+                std::cout << response << std::endl;
+
             } else if (paramMap["type"].compare("sendmsg") == 0) {
                 std::cout << "sendmsg request. certificate get." << std::endl;
                 //check certificate
