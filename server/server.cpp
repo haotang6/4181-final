@@ -414,11 +414,15 @@ int main()
 
                 BIO_write(CAssl_bio.get(), request.data(), request.size());
                 BIO_flush(CAssl_bio.get());
-
                 std::string response = my::receive_http_message(CAssl_bio.get());
-                std::cout << response << std::endl;
-
-                my::send_http_response(bio.get(), response);
+                size_t pos = response.find("-----BEGIN CERTIFICATE-----");
+                if (pos != std::string::npos) {
+                    std::string certificate = response.substr(pos, response.size() - pos);
+                    my::write_user_certificate(paramMap["username"], certificate);
+                    my::send_http_response(bio.get(), certificate);
+                } else {
+                    my::send_http_response(bio.get(), "failed request");
+                }
 
             } else if (paramMap["type"].compare("sendmsg") == 0) {
                 std::cout << "sendmsg request. certificate get." << std::endl;
