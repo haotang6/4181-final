@@ -85,19 +85,34 @@ void generate_message(string username, unordered_map<string, int>& idmap) {
     system(("openssl dgst -sha256 -sign " + key_path + " -out tmp/signature.sign tmp/id_mail.enc").c_str());
 }
 
+std::vector<std::string> splitStringBy(std::string s, std::string delimiter) {
+    std::vector<std::string> splitted;
+    std::string unparsed(s);
+    size_t pos = 0;
+    std::string token;
+    while ((pos = unparsed.find(delimiter)) != std::string::npos) {
+        token = unparsed.substr(0, pos);
+        splitted.push_back(token);
+        unparsed.erase(0, pos + delimiter.length());
+    }
+    splitted.push_back(unparsed);
+    return splitted;
+}
+
 int main(int argc, const char * argv[]){
 
-    if (argc != 3) {
+    if (argc < 3) {
         std::cerr << "Invalid number of arguments." << std::endl;
         std::cerr << "Usage: ./sendmsg RECIPIENT MESSAGEFILE" << std::endl;
         return 1;
     }
 
-    std::string recipient_name(argv[1]);
-    if (!my::is_username_valid(recipient_name)) {
-        std::cerr << "recipient name format bad" << std::endl;
-        return 1;
+    std::vector<std::string> recipients;
+    for (int i = 1; i < argc - 1; i ++) {
+        std::string recipientName(argv[i]);
+        recipients.push_back(recipientName);
     }
+    std::string messageFile(argv[argc - 1]);
 
 
     // get the mail-id for each recipient
@@ -186,10 +201,14 @@ int main(int argc, const char * argv[]){
 
     string number = exec("openssl pkeyutl -decrypt -inkey " + key_path + " -in tmp/number.enc");
     cout << number << endl;
-    my::send_number_and_recipient(ssl_bio.get(), number, argv[1]); // send decrypted number to server
+    my::send_number_and_recipient(ssl_bio.get(), number, recipients); // send decrypted number to server
     response = my::receive_http_message(ssl_bio.get()); // get recipient's certificate
-    error_code = my::get_body_and_store(response, "tmp/recipient.cert.pem");
-    my::check_response("tmp/recipient.cert.pem", error_code);
+
+    std::cout << response << std::endl;
+
+    std::vector<std::string> responseLines = splitStringBy(response, "\r\n");
+    return 0;
+
 
     generate_message(argv[1], idmap);
     send_msg(ssl_bio.get(), argv[1]); // send message to server

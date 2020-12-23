@@ -523,9 +523,19 @@ int main()
                 request = my::receive_http_message(bio.get());
                 printf("Got request:\n");           
                 std::vector<std::string> requestLines = splitStringBy(request, "\r\n");
-                std::vector<std::string> para = splitStringBy(requestLines[5], "&");
-                std::cout << "sendmsg request. rand number receive is " + para[0] << ", recipient is " << para[1] << std::endl;
-                if (para[0] != r) {
+                std::vector<std::string> para = splitStringBy(requestLines[5], " ");
+                std::string numReceived = para[0];
+                std::vector<std::string> recipients;
+                for (int i = 1; i < para.size(); i++) {
+                    recipients.push_back(para[i]);
+                }
+                std::cout << "sendmsg request. rand number receive is " + numReceived << std::endl;
+                std::cout << "recipients are:";
+                for (int i = 0; i < recipients.size(); i++) {
+                    std::cout << " " + recipients[i];
+                }
+                std::cout << "\n";
+                if (numReceived != r) {
                     //std::cout << "Number does not match! Fake identity!!!" << std::endl;
                     my::send_http_response(bio.get(), "fake-identity", 403);
                     clean();
@@ -535,18 +545,25 @@ int main()
                     std::cout << "Number match! Identity confirmed!!!" << std::endl;
                 }
 
-                // check if recipient cert exists
-                std::string recipient_cert_path = "certs/"+para[1]+".cert.pem";
-                std::ifstream f2(recipient_cert_path, std::ifstream::binary);
-                if(!f2) {
-                    my::send_http_response(bio.get(),"non-existent-recipent-cert", 403);
-                    clean();
-                    continue;
-                }
-
                 // send recipient certificate
-                std::string cert((std::istreambuf_iterator<char>(f2)), std::istreambuf_iterator<char>());
-                f2.close();
+                std::vector<std::string> certificates;
+                std::string noCert("no");
+                for (int i = 0; i < recipients.size(); i ++) {
+                    std::string recipient_cert_path = "certs/" + recipients[i] + ".cert.pem";
+                    std::ifstream f2(recipient_cert_path, std::ifstream::binary);
+                    if (!f2) {
+                        certificates.push_back(noCert);
+                    } else {
+                        std::string cert((std::istreambuf_iterator<char>(f2)), std::istreambuf_iterator<char>());
+                        certificates.push_back(cert);
+                        f2.close();
+                    }
+                }
+                std::string certResponse;
+                for (int i = 0; i < recipients.size(); i ++) {
+                    certResponse += recipients[i] + "\r\n";
+                    certResponse += certificates[i] + "\r\n";
+                }
                 my::send_http_response(bio.get(),cert);
 
                 request = my::receive_http_message(bio.get());

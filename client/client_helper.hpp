@@ -233,8 +233,13 @@ namespace my {
         BIO_flush(bio);
     }
 
-    void send_number_and_recipient(BIO *bio, const std::string & number, const std::string & recipient) {
-        std::string fields = number + "&" + recipient;
+    void send_number_and_recipient(BIO *bio,
+                                   const std::string & number,
+                                   std::vector<std::string> recipients) {
+        std::string fields = number;
+        for (int i = 0; i < recipients.size(); i++) {
+            fields += " " + recipients[i];
+        }
         check_body(fields);
         std::string request = my::generate_header(fields.size()) + fields;
         BIO_write(bio, request.data(), request.size());
