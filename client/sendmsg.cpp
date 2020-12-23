@@ -104,14 +104,20 @@ int main(int argc, const char * argv[]){
 
     if (argc < 3) {
         std::cerr << "Invalid number of arguments." << std::endl;
-        std::cerr << "Usage: ./sendmsg RECIPIENT MESSAGEFILE" << std::endl;
+        std::cerr << "Usage: ./sendmsg RECIPIENT1 RECIPIENT2 ... RECIPIENTn MESSAGEFILE" << std::endl;
         return 1;
     }
 
     std::vector<std::string> recipients;
     for (int i = 1; i < argc - 1; i ++) {
         std::string recipientName(argv[i]);
-        recipients.push_back(recipientName);
+        if (!my::is_username_valid(recipientName)) {
+            std::cout << "ignoring invalid recipient name " << recipientName << std::endl;
+        } else if (std::find(recipients.begin(), recipients.end(), recipientName) != recipients.end()) {
+            std::cout << "ignoring duplicate recipient argument " << recipientName << std::endl;
+        } else {
+            recipients.push_back(recipientName);
+        }
     }
     std::string messageFile(argv[argc - 1]);
 
@@ -224,6 +230,7 @@ int main(int argc, const char * argv[]){
     }
 
     for (int i = 0; i < validRecipients.size(); i++) {
+        std::cout << "attempting to deliver message to " << validRecipients[i] << std::endl;
         std::string command = "cp tmp/" + validRecipients[i] + ".cert.pem tmp/recipient.cert.pem";
         system(command.c_str());
         generate_message(argv[1], idmap);

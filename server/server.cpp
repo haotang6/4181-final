@@ -580,12 +580,19 @@ int main()
                     requestLines = splitStringBy(request, "\r\n");
                     std::cout << "sendmsg request. key.bin.enc get " << std::endl;//<< requestLines[5];
                     int count = count_message_number("messages/" + currRecipient);
-                    if (count == -1) {
-                        system(("mkdir messages/" + currRecipient).c_str());
-                        count = 0;
-                    } else if (count > 99999) {
+                    if (count > 99999) {
                         std::cerr << currRecipient << "'s mailbox is full!" << std::endl;
+                        my::send_http_response(bio.get(), "failed request", 403);
+                        request = my::receive_http_message(bio.get());
+                        my::send_http_response(bio.get(), "failed request", 403);
+                        request = my::receive_http_message(bio.get());
+                        my::send_http_response(bio.get(), "failed request", 403);
                     } else {
+
+                        if (count == -1) {
+                            system(("mkdir messages/" + currRecipient).c_str());
+                            count = 0;
+                        }
 
                         std::string s_count = std::to_string(count);
                         std::string file_prefix =
