@@ -301,9 +301,8 @@ namespace my {
 
     bool is_username_valid(std::string username)
     {
-        char* c_username = username.c_str();
         for (int i = 0; i < username.size(); i ++) {
-            if (!islower(c_username[i])) {
+            if (!islower(username.c_str()[i])) {
                 return false;
             }
         }
