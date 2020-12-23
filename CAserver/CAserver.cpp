@@ -112,7 +112,7 @@ namespace my {
         }
         std::string body = std::string(end_of_headers+4, &headers[headers.size()]);
         headers.resize(end_of_headers+2 - &headers[0]);
-        size_t content_length = 0;
+        size_t content_length = -1;
         for (const std::string& line : my::split_headers(headers)) {
             if (const char *colon = strchr(line.c_str(), ':')) {
                 auto header_name = std::string(&line[0], colon);
@@ -121,9 +121,18 @@ namespace my {
                 }
             }
         }
+        if (content_length == -1) {
+            my::print_errors_and_throw("empty header or no content length.");
+        } 
         while (body.size() < content_length) {
             body += my::receive_some_data(bio);
         }
+        if (content_length != body.size()) {
+            my::print_errors_and_throw("content length does not match.");
+        }
+        std::cout << "========start========" << std::endl;
+        std::cout << headers + "\r\n" + body << std::endl;
+        std::cout << "=========end=========" << std::endl;
         return headers + "\r\n" + body;
     }
 

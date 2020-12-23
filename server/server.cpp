@@ -140,13 +140,18 @@ std::string receive_http_message(BIO *bio)
     if (content_length != body.size()) {
         my::print_errors_and_throw("content length does not match.");
     }
-    // std::cout << "========start========" << std::endl;
-    // std::cout << headers + "\r\n" + body << std::endl;
-    // std::cout << "=========end=========" << std::endl;
+    std::cout << "========start========" << std::endl;
+    std::cout << headers + "\r\n" + body << std::endl;
+    std::cout << "=========end=========" << std::endl;
     return headers + "\r\n" + body;
 }
 
-void send_http_response(BIO *bio, const std::string& body, int error_code=200)
+void check_body(std::string & body) {
+    if (body.size() < 4 || body.substr(body.size() - 4, 4) != "\r\n\r\n")
+        body += "\r\n\r\n";
+}
+
+void send_http_response(BIO *bio, std::string body, int error_code=200)
 {   
     std::string response = "HTTP/1.1 200 OK\r\n";
     if (error_code == 200); // do nothing
@@ -156,8 +161,8 @@ void send_http_response(BIO *bio, const std::string& body, int error_code=200)
     else {
         response = "HTTP/1.1 0 Unknown Error\r\n";
     }
-    response += "Content-Length: " + std::to_string(body.size()) + "\r\n";
-    response += "\r\n";
+    // check_body(body); When sending cert, we do not add \r\n at the end.
+    response += "Content-Length: " + std::to_string(body.size()) + "\r\n\r\n";
 
     BIO_write(bio, response.data(), response.size());
     BIO_write(bio, body.data(), body.size());
@@ -276,6 +281,17 @@ void clean() {
     // system("rm tmp/*");
 }
 
+std::string check_username_and_password(const std::string & username, const std::string & password, const std::string & csr) {
+    std::string fields = "type=getcert&username=" + username + "&password=" + password;
+    std::string request = "POST / HTTP/1.1\r\n";
+    std::string body = fields + "\r\n" + csr;
+    // my::check_body(body); When sending cert, we do not add \r\n at the end.
+    request += "Host: duckduckgo.com\r\n";
+    request += "Content-Type: application/x-www-form-urlencoded\r\n";
+    request += "Content-Length: " + std::to_string(body.size()) + "\r\n\r\n" + body;
+    return request;
+}
+
 int main()
 {
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -368,24 +384,22 @@ int main()
                 for (int i = 6; i < requestLines.size(); i ++) {
                     csr += requestLines[i];
                 }
-
-                std::string fields = "type=getcert&username=" + username + "&password=" + password;
-                std::string request = "POST / HTTP/1.1\r\n";
-                request += "Host: duckduckgo.com\r\n";
-                request += "Content-Type: application/x-www-form-urlencoded\r\n";
-                request += "Content-Length: " + std::to_string(fields.size() + 2 + csr.size()) + "\r\n";
-                request += "\r\n";
-                request += fields + "\r\n";
-                request += csr + "\r\n";
+                
+                std::string request = check_username_and_password(username, password, csr);
                 BIO_write(CAssl_bio.get(), request.data(), request.size());
                 BIO_flush(CAssl_bio.get());
-
                 std::string response = my::receive_http_message(CAssl_bio.get());
                 size_t pos = response.find("-----BEGIN CERTIFICATE-----");
                 if (pos != std::string::npos) {
-                    std::string certificate = response.substr(pos, response.size() - pos);
-                    my::write_user_certificate(paramMap["username"], certificate);
-                    my::send_http_response(bio.get(), certificate);
+                    int count = count_message_number("messages/" + username);
+                    if (count == -1 || count == 0) {
+                        std::string certificate = response.substr(pos, response.size() - pos);
+                        my::write_user_certificate(paramMap["username"], certificate);
+                        my::send_http_response(bio.get(), certificate);
+                    }
+                    else {
+                        my::send_http_response(bio.get(), "unread-messages", 403);
+                    }
                 } else {
                     my::send_http_response(bio.get(), "failed request", 403);
                 }
@@ -394,6 +408,13 @@ int main()
                 std::string username = paramMap["username"];
                 std::string old_password = paramMap["old_password"];
                 std::string new_password = paramMap["new_password"];
+                int count = count_message_number("messages/" + username);
+                if (count == -1 || count == 0); // do nothing
+                else {
+                    my::send_http_response(bio.get(), "failed request", 403);
+                    continue;
+                }
+
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
                 SSL_library_init();
                 SSL_load_error_strings();
@@ -436,13 +457,12 @@ int main()
 
                 std::string fields = "type=changepw&username=" + username + "&old_password=" + old_password + "&new_password=";
                 fields += new_password;
-                std::string request = "POST / HTTP/1.1\r\n";
+                std::string body = fields + "\r\n" + csr;
+                // my::check_body(body); When sending cert, we do not add \r\n at the end.
+                request = "POST / HTTP/1.1\r\n";
                 request += "Host: duckduckgo.com\r\n";
                 request += "Content-Type: application/octet-stream\r\n";
-                request += "Content-Length: " + std::to_string(fields.size() + 2 + csr.size()) + "\r\n";
-                request += "\r\n";
-                request += fields + "\r\n";
-                request += csr + "\r\n";
+                request += "Content-Length: " + std::to_string(body.size()) + "\r\n\r\n" + body;
 
                 BIO_write(CAssl_bio.get(), request.data(), request.size());
                 BIO_flush(CAssl_bio.get());
@@ -453,7 +473,7 @@ int main()
                     my::write_user_certificate(paramMap["username"], certificate);
                     my::send_http_response(bio.get(), certificate);
                 } else {
-                    my::send_http_response(bio.get(), "failed request");
+                    my::send_http_response(bio.get(), "failed request", 403);
                 }
 
             } else if (paramMap["type"].compare("sendmsg") == 0) {
