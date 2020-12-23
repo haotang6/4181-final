@@ -126,7 +126,7 @@ int main(int argc, const char * argv[]){
     idfile.close();
 
     // generate [cert|msg]
-    ifstream msg(argv[2], ifstream::binary);
+    ifstream msg(messageFile, ifstream::binary);
     ifstream cert(cert_path, ifstream::binary);
     if (!msg) {
         cout << "Couldn't find message file." << endl;
