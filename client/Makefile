@@ -27,5 +27,6 @@ install:getcert changepw recvmsg sendmsg
 	cp cgencsr.sh ../client-$(USER)
 	cp test.txt ../client-$(USER)
 	cp config ../client-$(USER)
+	cp openssl.cnf ../client-$(USER)
 
 	

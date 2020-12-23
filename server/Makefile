@@ -1,6 +1,5 @@
 default: all
 all: server
-	rm -r messages certs tmp
 	./create-folders.sh
 
 server: server.cpp
@@ -8,3 +7,4 @@ server: server.cpp
 
 clean:
 	rm server
+	rm -rf messages certs tmp
