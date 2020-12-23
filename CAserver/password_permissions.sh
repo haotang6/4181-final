@@ -14,4 +14,4 @@ addgroup --force-badname "$groupname"
 
 chown root user_passwords.txt
 chgrp "$groupname" user_passwords.txt
-chmod u=rwx,g=rwx user_passwords.txt
+chmod u=rw,g=rw,o= user_passwords.txt
