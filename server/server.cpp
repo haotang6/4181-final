@@ -573,6 +573,7 @@ int main()
                     printf("Got request:\n");
                     requestLines = splitStringBy(request, "\r\n");
                     std::string currRecipient = requestLines[5];
+                    my::send_http_response(bio.get(), "ok");
 
                     std::cout << "processing " << currRecipient << std::endl;
 
@@ -589,7 +590,7 @@ int main()
                         request = my::receive_http_message(bio.get());
                         my::send_http_response(bio.get(), "failed request", 403);
                     } else {
-
+                        my::send_http_response(bio.get(), "ok");
                         if (count == -1) {
                             system(("mkdir messages/" + currRecipient).c_str());
                             count = 0;
