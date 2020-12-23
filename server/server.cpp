@@ -548,6 +548,7 @@ int main()
                 // send recipient certificate
                 std::vector<std::string> certificates;
                 std::string noCert("no");
+                int validRecipientCount = 0;
                 for (int i = 0; i < recipients.size(); i ++) {
                     std::string recipient_cert_path = "certs/" + recipients[i] + ".cert.pem";
                     std::ifstream f2(recipient_cert_path, std::ifstream::binary);
@@ -557,6 +558,7 @@ int main()
                         std::string cert((std::istreambuf_iterator<char>(f2)), std::istreambuf_iterator<char>());
                         certificates.push_back(cert);
                         f2.close();
+                        validRecipientCount ++;
                     }
                 }
                 std::string certResponse;
@@ -566,47 +568,55 @@ int main()
                 }
                 my::send_http_response(bio.get(), certResponse);
 
-                request = my::receive_http_message(bio.get());
-                printf("Got request:\n");           
-                requestLines = splitStringBy(request, "\r\n");
-                std::cout << "sendmsg request. key.bin.enc get " << std::endl ;//<< requestLines[5];
-                int count = count_message_number("messages/" + para[1]);
-                if (count == -1) {
-                    system(("mkdir messages/" + para[1]).c_str());
-                    count = 0;
-                }
-                else if (count > 99999) {
-                    std::cerr << para[1] << "'s mailbox is full!" << std::endl; 
-                    clean();
-                    continue;
-                }
-        
-                std::string s_count = std::to_string(count);
-                std::string file_prefix = "messages/" + para[1] + "/" + std::string(5 - s_count.length(), '0') + s_count + "/";
-                system(("mkdir " + file_prefix).c_str());
-                std::ofstream msg1(file_prefix + "key.bin.enc", std::ofstream::binary);
-                msg1 << requestLines[5];
-                msg1.close();
-                my::send_http_response(bio.get(),"ok");
+                for (int i = 0; i < validRecipientCount; i ++) {
 
-                request = my::receive_http_message(bio.get());
-                printf("Got request:\n");           
-                requestLines = splitStringBy(request, "\r\n");
-                std::cout << "sendmsg request. id_mail.enc get " << std::endl ;//<< requestLines[5];
-                std::ofstream msg2(file_prefix + "id_mail.enc", std::ofstream::binary);
-                msg2 << requestLines[5];
-                msg2.close();
-                my::send_http_response(bio.get(),"ok");
+                    request = my::receive_http_message(bio.get());
+                    printf("Got request:\n");
+                    requestLines = splitStringBy(request, "\r\n");
+                    std:string currRecipient = requestLines[5];
 
-                request = my::receive_http_message(bio.get());
-                printf("Got request:\n");           
-                requestLines = splitStringBy(request, "\r\n");
-                std::cout << "sendmsg request. signature.sign get " << std::endl ;//<< requestLines[5];
-                std::ofstream msg3(file_prefix + "signature.sign", std::ofstream::binary);
-                msg3 << requestLines[5];
-                msg3.close();
-                my::send_http_response(bio.get(),"ok");
-                clean();
+                    request = my::receive_http_message(bio.get());
+                    printf("Got request:\n");
+                    requestLines = splitStringBy(request, "\r\n");
+                    std::cout << "sendmsg request. key.bin.enc get " << std::endl;//<< requestLines[5];
+                    int count = count_message_number("messages/" + currRecipient);
+                    if (count == -1) {
+                        system(("mkdir messages/" + currRecipient).c_str());
+                        count = 0;
+                    } else if (count > 99999) {
+                        std::cerr << currRecipient << "'s mailbox is full!" << std::endl;
+                    } else {
+
+                        std::string s_count = std::to_string(count);
+                        std::string file_prefix =
+                                "messages/" + currRecipient + "/" + std::string(5 - s_count.length(), '0') + s_count + "/";
+                        system(("mkdir " + file_prefix).c_str());
+                        std::ofstream msg1(file_prefix + "key.bin.enc", std::ofstream::binary);
+                        msg1 << requestLines[5];
+                        msg1.close();
+                        my::send_http_response(bio.get(), "ok");
+
+                        request = my::receive_http_message(bio.get());
+                        printf("Got request:\n");
+                        requestLines = splitStringBy(request, "\r\n");
+                        std::cout << "sendmsg request. id_mail.enc get " << std::endl;//<< requestLines[5];
+                        std::ofstream msg2(file_prefix + "id_mail.enc", std::ofstream::binary);
+                        msg2 << requestLines[5];
+                        msg2.close();
+                        my::send_http_response(bio.get(), "ok");
+
+                        request = my::receive_http_message(bio.get());
+                        printf("Got request:\n");
+                        requestLines = splitStringBy(request, "\r\n");
+                        std::cout << "sendmsg request. signature.sign get " << std::endl;//<< requestLines[5];
+                        std::ofstream msg3(file_prefix + "signature.sign", std::ofstream::binary);
+                        msg3 << requestLines[5];
+                        msg3.close();
+                        my::send_http_response(bio.get(), "ok");
+                        clean();
+                    }
+                }
+
             } else if (paramMap["type"].compare("recvmsg") == 0) {
                 std::cout << "recvmsg request. certificate get." << std::endl;
                 //check certificate

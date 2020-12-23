@@ -51,6 +51,7 @@ void send_msg(BIO *bio, string recipient) {
     string sg((std::istreambuf_iterator<char>(f3)), std::istreambuf_iterator<char>());
     f3.close();
 
+    send_request(bio, recipient)
     send_request(bio, keyenc);
     send_request(bio, idmail);
     send_request(bio, sg);
@@ -222,16 +223,14 @@ int main(int argc, const char * argv[]){
         i += 2;
     }
 
-    for (int i = 0; i < validRecipients.size(); i ++) {
-        std::cout << validRecipients[i] << std::endl;
+    for (int i = 0; i < validRecipients.size(); i++) {
+        std::string command = "cp tmp/" + validRecipients[i] + ".cert.pem tmp/recipient.cert.pem";
+        system(command.c_str());
+        generate_message(argv[1], idmap);
+        send_msg(ssl_bio.get(), argv[1]); // send message to server
+        response = my::receive_http_message(ssl_bio.get());
+        cout << response << endl;
     }
-    return 0;
-
-
-    generate_message(argv[1], idmap);
-    send_msg(ssl_bio.get(), argv[1]); // send message to server
-    response = my::receive_http_message(ssl_bio.get());
-    cout << response << endl;
     // update the id file
 
     system("rm tmp/*");
