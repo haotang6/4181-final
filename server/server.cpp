@@ -564,7 +564,7 @@ int main()
                     certResponse += recipients[i] + "\r\n";
                     certResponse += certificates[i] + "\r\n";
                 }
-                my::send_http_response(bio.get(),cert);
+                my::send_http_response(bio.get(), certResponse);
 
                 request = my::receive_http_message(bio.get());
                 printf("Got request:\n");           
