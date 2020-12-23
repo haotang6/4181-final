@@ -234,8 +234,8 @@ int main(int argc, const char * argv[]){
         std::cout << "attempting to deliver message to " << validRecipients[i] << std::endl;
         std::string command = "cp tmp/" + validRecipients[i] + ".cert.pem tmp/recipient.cert.pem";
         system(command.c_str());
-        generate_message(argv[1], idmap);
-        send_msg(ssl_bio.get(), argv[1]); // send message to server
+        generate_message(validRecipients[i], idmap);
+        send_msg(ssl_bio.get(), validRecipients[i]); // send message to server
         response = my::receive_http_message(ssl_bio.get());
         cout << response << endl;
     }
