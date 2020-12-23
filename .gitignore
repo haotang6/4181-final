@@ -8,3 +8,5 @@ server/tmp/
 ca/
 client-*/
 CAserver/tmp/
+CMakeLists.txt
+cmake-build-debug/

@@ -11,6 +11,7 @@
 #include <sstream>
 #include <assert.h>
 #include <map>
+#include <ctype.h>
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
@@ -296,6 +297,17 @@ namespace my {
             }
         }
         return config_map;
+    }
+
+    bool is_username_valid(std::string username)
+    {
+        char* c_username = username.c_str();
+        for (int i = 0; i < username.size(); i ++) {
+            if (!islower(c_username[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
 } // namespace my

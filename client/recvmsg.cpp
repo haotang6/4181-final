@@ -99,6 +99,13 @@ void check_and_decrypt(string key_file, string id_mail_file, string sign_file,
 }
 
 int main(){
+
+    if (argc != 1) {
+        std::cerr << "Invalid number of arguments." << std::endl;
+        std::cerr << "Usage: ./recvmsg" << std::endl;
+        return 1;
+    }
+
     // get the mail-id for each sender
     ifstream idfile(id_path.c_str(), ifstream::binary);
     unordered_map<string, int> idmap;

@@ -16,6 +16,19 @@ std::string read_csr(std::string csr_path) {
 
 int main(int argc, char *argv[]) {
 
+    if (argc != 4) {
+        std::cerr << "Invalid number of arguments." << std::endl;
+        std::cerr << "Usage: ./changepw USERNAME OLD_PASSWORD NEW_PASSWORD" << std::endl;
+        return 1;
+    }
+
+    std::string username(argv[1]);
+    if (!my::is_username_valid(username)) {
+        std::cerr << "username is not correctly formatted." << std::endl;
+        return 1;
+    }
+
+
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     SSL_library_init();
     SSL_load_error_strings();
@@ -61,7 +74,6 @@ int main(int argc, char *argv[]) {
     }
     my::verify_the_certificate(my::get_ssl(ssl_bio.get()), "duckduckgo.com");
 
-    std::string username(argv[1]);
     std::string old_password(argv[2]);
     std::string new_password(argv[3]);
     system(("./cgencsr.sh "+username).c_str());

@@ -85,10 +85,19 @@ void generate_message(string username, unordered_map<string, int>& idmap) {
 }
 
 int main(int argc, const char * argv[]){
+
     if (argc != 3) {
-        cout << "Please apply the recipient name and your message file path" << endl;
+        std::cerr << "Invalid number of arguments." << std::endl;
+        std::cerr << "Usage: ./sendmsg RECIPIENT MESSAGEFILE" << std::endl;
         return 1;
     }
+
+    std::string recipient_name(argv[1]);
+    if (!my::is_username_valid(recipient_name)) {
+        std::cerr << "recipient name format bad" << std::endl;
+        return 1;
+    }
+
 
     // get the mail-id for each recipient
     ifstream idfile(id_path.c_str(), ifstream::binary);
