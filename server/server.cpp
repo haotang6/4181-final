@@ -568,12 +568,16 @@ int main()
                 }
                 my::send_http_response(bio.get(), certResponse);
 
+                std::cout << "valid recipients: " << validRecipientCount << std::endl;
+
                 for (int i = 0; i < validRecipientCount; i ++) {
 
                     request = my::receive_http_message(bio.get());
                     printf("Got request:\n");
                     requestLines = splitStringBy(request, "\r\n");
                     std::string currRecipient = requestLines[5];
+
+                    std::cout << "processing " << currRecipient << std::endl;
 
                     request = my::receive_http_message(bio.get());
                     printf("Got request:\n");
