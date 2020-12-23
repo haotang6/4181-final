@@ -140,9 +140,6 @@ std::string receive_http_message(BIO *bio)
     if (content_length != body.size()) {
         my::print_errors_and_throw("content length does not match.");
     }
-    std::cout << "========start========" << std::endl;
-    std::cout << headers + "\r\n" + body << std::endl;
-    std::cout << "=========end=========" << std::endl;
     return headers + "\r\n" + body;
 }
 
