@@ -238,14 +238,14 @@ int main(int argc, const char * argv[]){
         send_msg(ssl_bio.get(), validRecipients[i]); // send message to server
         response = my::receive_http_message(ssl_bio.get());
         cout << response << endl;
-
-        ofstream idfile2(id_path.c_str(), ofstream::binary);
-        for(auto &p: idmap){
-            idfile2 << p.first << " " << p.second << endl;
-        }
-        idfile2.close();
     }
     // update the id file
 
     system("rm tmp/*");
+
+    ofstream idfile2(id_path.c_str(), ofstream::binary);
+    for(auto &p: idmap){
+        idfile2 << p.first << " " << p.second << endl;
+    }
+    idfile2.close();
 }

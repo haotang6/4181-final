@@ -14,7 +14,7 @@ Yuan Xu (yx2537@columbia.edu)
    1. Run `./setmailserverkeypair.sh`
    2. Run `make`
 4. Under `client` folder
-   1. Run `getcacert.sh`
+   1. Run `./getcacert.sh`
    2. To install a client for a user, run `make install USER=<username>`. For example, run `make install USER=overrich` to get a client for `overrich`. There will be a `client-overrich` under the parent folder. Create more than 1 client for testing.
 
 ## Design
