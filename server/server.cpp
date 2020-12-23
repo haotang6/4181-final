@@ -573,7 +573,7 @@ int main()
                     request = my::receive_http_message(bio.get());
                     printf("Got request:\n");
                     requestLines = splitStringBy(request, "\r\n");
-                    std:string currRecipient = requestLines[5];
+                    std::string currRecipient = requestLines[5];
 
                     request = my::receive_http_message(bio.get());
                     printf("Got request:\n");

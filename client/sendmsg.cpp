@@ -51,7 +51,7 @@ void send_msg(BIO *bio, string recipient) {
     string sg((std::istreambuf_iterator<char>(f3)), std::istreambuf_iterator<char>());
     f3.close();
 
-    send_request(bio, recipient)
+    send_request(bio, recipient);
     send_request(bio, keyenc);
     send_request(bio, idmail);
     send_request(bio, sg);
