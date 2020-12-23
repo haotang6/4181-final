@@ -136,19 +136,23 @@ namespace my {
         BIO_flush(bio);
     }
 
+    std::string generate_header(size_t bodylen) {
+        std::string request = "POST / HTTP/1.1\r\n";
+        request += "Host: duckduckgo.com\r\n";
+        request += "Content-Type: application/octet-stream\r\n";
+        request += "Content-Length: " + std::to_string(bodylen) + "\r\n";
+        request += "\r\n";
+        return request;
+    }
+
     void send_getcert_request(BIO *bio,
                               const std::string& username,
                               const std::string& password,
                               const std::string& csr_content)
     {
         std::string fields = "type=getcert&username=" + username + "&password=" + password;
-        std::string request = "POST / HTTP/1.1\r\n";
-        request += "Host: duckduckgo.com\r\n";
-        request += "Content-Type: application/octet-stream\r\n";
-        request += "Content-Length: " + std::to_string(fields.size() + 2 + csr_content.size()) + "\r\n";
-        request += "\r\n";
-        request += fields + "\r\n";
-        request += csr_content + "\r\n";
+        std::string body = fields + "\r\n" + csr_content + "\r\n\r\n";
+        std::string request = my::generate_header(body.size()) + body;
 
         std::cout << request << std::endl;
 
@@ -164,27 +168,12 @@ namespace my {
     {
         std::string fields = "type=changepw&username=" + username + "&old_password=" + old_password + "&new_password=";
         fields += new_password;
-        std::string request = "POST / HTTP/1.1\r\n";
-        request += "Host: duckduckgo.com\r\n";
-        request += "Content-Type: application/octet-stream\r\n";
-        request += "Content-Length: " + std::to_string(fields.size() + 2 + csr_content.size()) + "\r\n";
-        request += "\r\n";
-        request += fields + "\r\n";
-        request += csr_content + "\r\n";
-
+        std::string body = fields + "\r\n" + csr_content + "\r\n\r\n";
+        std::string request = my::generate_header(body.size()) + body;
         std::cout << request << std::endl;
 
         BIO_write(bio, request.data(), request.size());
         BIO_flush(bio);
-    }
-
-    std::string generate_header(int bodylen) {
-        std::string request = "POST / HTTP/1.1\r\n";
-        request += "Host: duckduckgo.com\r\n";
-        request += "Content-Type: application/octet-stream\r\n";
-        request += "Content-Length: " + std::to_string(bodylen) + "\r\n";
-        request += "\r\n";
-        return request;
     }
 
     void send_certificate(BIO *bio, const std::string & cert_path, const std::string & request_type) {
@@ -192,9 +181,10 @@ namespace my {
         std::string c((std::istreambuf_iterator<char>(cert)), std::istreambuf_iterator<char>());
         cert.close();
         std::string fields = "type=" + request_type;
-        std::string request = generate_header(fields.size() + 2 + c.size());
-        request += fields + "\r\n";
-        request += c + "\r\n\r\n";
+        std::string body = fields + "\r\n" + c;
+        if (body.substr(body.size() - 4, 4) != "\r\n\r\n")
+            body += "\r\n\r\n";
+        std::string request = my::generate_header(body.size()) + body;
         BIO_write(bio, request.data(), request.size());
         BIO_flush(bio);
     }
@@ -227,19 +217,16 @@ namespace my {
     }
 
     void send_number(BIO *bio, const std::string & number) {
-        std::string fields = number;
+        std::string fields = number + "\r\n\r\n";
         std::string request = my::generate_header(fields.size());
-        request += fields + "\r\n";
-        request += "\r\n";
+        request += fields;
         BIO_write(bio, request.data(), request.size());
         BIO_flush(bio);
     }
 
     void send_number_and_recipient(BIO *bio, const std::string & number, const std::string & recipient) {
-        std::string fields = number + "&" + recipient;
-        std::string request = my::generate_header(fields.size());
-        request += fields + "\r\n";
-        request += "\r\n";
+        std::string fields = number + "&" + recipient + "\r\n\r\n";
+        std::string request = my::generate_header(fields.size()) + fields;
         BIO_write(bio, request.data(), request.size());
         BIO_flush(bio);
     }

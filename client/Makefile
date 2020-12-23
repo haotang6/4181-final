@@ -15,7 +15,7 @@ clean:
 	rm client getcert changepw recvmsg sendmsg
 
 install:getcert changepw recvmsg sendmsg
-	rm -r ../client-$(USER)
+	rm -rf ../client-$(USER)
 	mkdir ../client-$(USER)
 	mkdir ../client-$(USER)/client_files
 	mkdir ../client-$(USER)/tmp
