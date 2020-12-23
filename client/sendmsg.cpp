@@ -9,6 +9,7 @@
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
 
