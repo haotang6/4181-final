@@ -32,9 +32,10 @@ string exec(const string& cmd) {
     return result;
 }
 
-void send_request(BIO *bio, const string & msg) {
+void send_request(BIO *bio, string msg) {
+    msg += "\r\n\r\n";
     string request = my::generate_header(msg.size());
-    request += msg + "\r\n\r\n";
+    request += msg;
     BIO_write(bio, request.data(), request.size());
     BIO_flush(bio);
 }

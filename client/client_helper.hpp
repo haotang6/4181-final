@@ -145,6 +145,11 @@ namespace my {
         request += "\r\n";
         return request;
     }
+    
+    void check_body(std::string & body) {
+        if (body.size() < 4 || body.substr(body.size() - 4, 4) != "\r\n\r\n")
+            body += "\r\n\r\n";
+    }
 
     void send_getcert_request(BIO *bio,
                               const std::string& username,
@@ -152,7 +157,8 @@ namespace my {
                               const std::string& csr_content)
     {
         std::string fields = "type=getcert&username=" + username + "&password=" + password;
-        std::string body = fields + "\r\n" + csr_content + "\r\n\r\n";
+        std::string body = fields + "\r\n" + csr_content;
+        // check_body(body); When sending cert, we do not add \r\n at the end.
         std::string request = my::generate_header(body.size()) + body;
 
         std::cout << request << std::endl;
@@ -169,7 +175,8 @@ namespace my {
     {
         std::string fields = "type=changepw&username=" + username + "&old_password=" + old_password + "&new_password=";
         fields += new_password;
-        std::string body = fields + "\r\n" + csr_content + "\r\n\r\n";
+        std::string body = fields + "\r\n" + csr_content;
+        // check_body(body); When sending cert, we do not add \r\n at the end.
         std::string request = my::generate_header(body.size()) + body;
         std::cout << request << std::endl;
 
@@ -183,8 +190,7 @@ namespace my {
         cert.close();
         std::string fields = "type=" + request_type;
         std::string body = fields + "\r\n" + c;
-        if (body.substr(body.size() - 4, 4) != "\r\n\r\n")
-            body += "\r\n\r\n";
+        // check_body(body); When sending cert, we do not add \r\n at the end.
         std::string request = my::generate_header(body.size()) + body;
         BIO_write(bio, request.data(), request.size());
         BIO_flush(bio);
@@ -196,8 +202,8 @@ namespace my {
         return header.substr(fir_ws + 1, sec_ws - (fir_ws + 1));
     }
 
-    std::string get_error_code_from_file(const std::string & response) {
-        std::stringstream ss(response);
+    std::string get_error_code_from_file(const std::string & filename) {
+        std::stringstream ss(filename);
         std::string temp;
         std::getline(ss,temp);
         return get_error_code_from_header(temp);
@@ -218,7 +224,8 @@ namespace my {
     }
 
     void send_number(BIO *bio, const std::string & number) {
-        std::string fields = number + "\r\n\r\n";
+        std::string fields = number;
+        check_body(fields);
         std::string request = my::generate_header(fields.size());
         request += fields;
         BIO_write(bio, request.data(), request.size());
@@ -226,7 +233,8 @@ namespace my {
     }
 
     void send_number_and_recipient(BIO *bio, const std::string & number, const std::string & recipient) {
-        std::string fields = number + "&" + recipient + "\r\n\r\n";
+        std::string fields = number + "&" + recipient;
+        check_body(fields);
         std::string request = my::generate_header(fields.size()) + fields;
         BIO_write(bio, request.data(), request.size());
         BIO_flush(bio);
