@@ -53,8 +53,11 @@ void send_msg(BIO *bio, string recipient) {
     f3.close();
 
     send_request(bio, recipient);
+    my::receive_http_message(bio);
     send_request(bio, keyenc);
+    my::receive_http_message(bio);
     send_request(bio, idmail);
+    my::receive_http_message(bio);
     send_request(bio, sg);
 }
 
