@@ -7,6 +7,7 @@
 #include <openssl/x509v3.h>
 #include <string>
 #include <fstream>
+#include <map>
 
 std::string read_csr(std::string csr_path) {
     std::ifstream ifs(csr_path);
@@ -37,9 +38,13 @@ int main(int argc, char *argv[]) {
         my::print_errors_and_exit("Error setting up trust store");
     }
 
+    // load config
+    std::map<std::string, std::string> config_map = my::load_config();
+    std::string server_url = config_map["server_ip"] + ":" + config_map["server_port"];
+
     // Change this line to connects to real duckduckgo
     // auto bio = my::UniquePtr<BIO>(BIO_new_connect("duckduckgo.com:443"));
-    auto bio = my::UniquePtr<BIO>(BIO_new_connect("localhost:8080"));
+    auto bio = my::UniquePtr<BIO>(BIO_new_connect(server_url.c_str()));
     if (bio == nullptr) {
         my::print_errors_and_exit("Error in BIO_new_connect");
     }
