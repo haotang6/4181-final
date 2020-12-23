@@ -207,6 +207,24 @@ int main(int argc, const char * argv[]){
     std::cout << response << std::endl;
 
     std::vector<std::string> responseLines = splitStringBy(response, "\r\n");
+    std::vector<std::string> validRecipients;
+    int i = 3;
+    while (i + 1 <= responseLines.size() - 1) {
+        std::string recipientName = responseLines[i];
+        std::string cert_content = responseLines[i + 1];
+        if (cert_content.find("-----BEGIN CERTIFICATE-----") != std::string::npos) {
+            std::string cert_loc = "tmp/" + recipientName + ".cert.pem"
+            std::ofstream rbody(cert_loc, std::ofstream::binary);
+            rbody << cert_content;
+            rbody.close();
+            validRecipients.push_back(recipientName);
+        }
+        i += 2;
+    }
+
+    for (int i = 0; i < validRecipients.size(); i ++) {
+        std::cout << validRecipients << std::endl;
+    }
     return 0;
 
 
