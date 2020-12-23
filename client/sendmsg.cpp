@@ -223,7 +223,7 @@ int main(int argc, const char * argv[]){
     }
 
     for (int i = 0; i < validRecipients.size(); i ++) {
-        std::cout << validRecipients << std::endl;
+        std::cout << validRecipients[i] << std::endl;
     }
     return 0;
 
