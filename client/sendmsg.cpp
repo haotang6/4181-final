@@ -213,7 +213,7 @@ int main(int argc, const char * argv[]){
         std::string recipientName = responseLines[i];
         std::string cert_content = responseLines[i + 1];
         if (cert_content.find("-----BEGIN CERTIFICATE-----") != std::string::npos) {
-            std::string cert_loc = "tmp/" + recipientName + ".cert.pem"
+            std::string cert_loc = "tmp/" + recipientName + ".cert.pem";
             std::ofstream rbody(cert_loc, std::ofstream::binary);
             rbody << cert_content;
             rbody.close();
