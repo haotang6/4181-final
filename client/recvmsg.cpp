@@ -98,7 +98,7 @@ void check_and_decrypt(string key_file, string id_mail_file, string sign_file,
     system("rm tmp/*");
 }
 
-int main(){
+int main(int argc, char *argv[]){
 
     if (argc != 1) {
         std::cerr << "Invalid number of arguments." << std::endl;
