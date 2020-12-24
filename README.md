@@ -16,8 +16,24 @@ Yuan Xu (yx2537@columbia.edu)
 4. Under `client` folder
    1. Run `./getcacert.sh`
    2. To install a client for a user, run `make install USER=<username>`. For example, run `make install USER=overrich` to get a client for `overrich`. There will be a `client-overrich` under the parent folder. Create more than 1 client for testing.
+   
+Note: the `CAserver/config`, `server/config` and `client/config` files contain the ip addresses and port
+numbers that each component hosts on and/or connects to. The current configurations allow three components
+to run on one VM. If need to run on separate VMs, it is necessary to change the configuration files with
+appropriate ip addresses and port numbers, and the ip/port for the same component in different files
+must match.
 
 ## Design
+
+### sandboxing
+
+The program is divided into three components: client, mailing server, and CA server. The client sends requests
+to mailing server, and mailing server sends request to CA server for password verification and certificate
+generation. The three components are designed to be placed on separate VMs and communicate with HTTPS. The
+list of users and hashed passwords are stored with the CA. This architecture ensures that if the mailing
+server is compromised, the passwords and the CA private key will not leak.
+
+### encryption/decryption
 
 The general idea of our mail encryption/decryption and authenticity verification:
 - We use the symmetric encryption algorithm to encrypt/decrypt messages since: 
@@ -36,6 +52,25 @@ The login logic of users using its client certificate:
 ## File layout
 
 ## File permission decisions
+
+On the CA side, the passwords are saved as `user_passwords.txt`, and the executable `CAserver` hosts a
+HTTPS server and handles requests from the mailing server.
+
+The permission of `user_passwords.txt` is set as follows:
+
+```
+-rw-rw---- 1 root CAserver_D6ijQa 4123 Dec 24 04:43 user_passwords.txt
+```
+
+The permission of the `CAserver` executable is set as follows:
+
+```
+-rwxrwsr-x 1 wj2301 CAserver_D6ijQa 171112 Dec 24 04:43 CAserver
+```
+
+The group name `CAserver_D6ijQa` is randomly generated when setting up the server. These permission settings
+ensure that on the VM which the CA is hosted on,  only the CA server application and root can read and modify
+the password database.
 
 ## Testing
 
