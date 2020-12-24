@@ -170,5 +170,10 @@ the password database.
    2. Under `client-unrosed`, run `./recvmsg`
 4. `addleness` can still `getcert` and `changepw`. Its mailbox on the server is empty
 
-
+### 5. server delivers the same mail for multiple times
+1. Install 3 clients: `overrish`, `unrosed`
+2. Generate certificates for the `overrich` and `unrosed`
+3. Under `client-overrich`, run `./sendmsg unrosed test.txt`
+4. Under `server/messages/unrosed`, run `cp -r 00000 00001`
+5. Under `client-unrosed`, run `./recvmsg` for 2 times. The second mail would show "id corrupted."
 
