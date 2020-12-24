@@ -4,6 +4,9 @@ Weifan Jiang (wj2301@columbia.edu)<br />
 Haotang Liu (hl3311@columbia.edu)<br />
 Yuan Xu (yx2537@columbia.edu)
 
+A demonstration video of our project is available [here](https://drive.google.com/file/d/1zu6zik90NNRe8OgDMNwe5dj2UnAOqz_I/view?usp=sharing).
+Lionmail account is required.
+
 ## Install
 
 ### install the project
@@ -19,7 +22,8 @@ Yuan Xu (yx2537@columbia.edu)
    1. Run `./getcacert.sh`
    2. To install a client for a user, run `make install USER=<username>`. For example, run `make install USER=overrich` to get a client for `overrich`. There will be a `client-overrich` under the parent folder. Create more than 1 client for testing.
    
-Note: the `CAserver/config`, `server/config` and `client/config` files contain the ip addresses and port
+Note: the `CAserver/config`, `server/config` and `client/config` files contain the ip addresses and por
+
 numbers that each component hosts on and/or connects to. The current configurations allow three components
 to run on one VM. If need to run on separate VMs, it is necessary to change the configuration files with
 appropriate ip addresses and port numbers, and the ip/port for the same component in different files
