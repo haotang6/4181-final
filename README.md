@@ -78,6 +78,38 @@ The login logic of users using its client certificate:
 
 ## File layout
 
+
+      4181-final/
+      ├── CAserver
+      │   ├── CAserver.cpp
+      │   ├── Makefile
+      │   ├── clear_password_db.sh
+      │   ├── config
+      │   ├── initial_users.txt
+      │   ├── password_permissions.sh
+      │   ├── setcaserverkeypair.sh
+      │   └── sgencert.sh
+      ├── README.md
+      ├── client
+      │   ├── Makefile
+      │   ├── cgencsr.sh
+      │   ├── changepw.cpp
+      │   ├── client_helper.hpp
+      │   ├── config
+      │   ├── getcacert.sh
+      │   ├── getcert.cpp
+      │   ├── openssl.cnf
+      │   ├── recvmsg.cpp
+      │   ├── sendmsg.cpp
+      │   └── test.txt
+      ├── server
+      │   ├── Makefile
+      │   ├── config
+      │   ├── create-folders.sh
+      │   ├── server.cpp
+      │   └── setmailserverkeypair.sh
+      └── setupca.sh
+
 ## File permission decisions
 
 On the CA side, the passwords are saved as `user_passwords.txt`, and the executable `CAserver` hosts a
