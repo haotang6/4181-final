@@ -1,8 +1,6 @@
 default: all
-all: client getcert changepw recvmsg sendmsg
+all: getcert changepw recvmsg sendmsg
 
-client: client.cpp
-	g++ -o client -std=c++14 client.cpp -lssl -lcrypto
 getcert: getcert.cpp client_helper.hpp
 	g++ -o getcert -g -std=c++14 getcert.cpp client_helper.hpp -lssl -lcrypto
 changepw: changepw.cpp client_helper.hpp
@@ -12,7 +10,7 @@ recvmsg: recvmsg.cpp client_helper.hpp
 sendmsg: sendmsg.cpp client_helper.hpp
 	g++ -o sendmsg -g -std=c++14 sendmsg.cpp client_helper.hpp -lssl -lcrypto
 clean:
-	rm client getcert changepw recvmsg sendmsg
+	rm getcert changepw recvmsg sendmsg
 
 install:getcert changepw recvmsg sendmsg
 	rm -rf ../client-$(USER)
