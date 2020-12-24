@@ -158,7 +158,7 @@ the password database.
    1. Under `client-overrich`, run `./getcert overrich Freemasonry_bruskest`
       1. Test  `changepw`: run `./changepw overrich Freemasonry_bruskest 123`
    2. Under `client-unrosed`, run `./getcert unrosed shamed_Dow`
-   3. Under `client-addleness`, run `./getcert unrosed Cardin_pwns`
+   3. Under `client-addleness`, run `./getcert addleness Cardin_pwns`
 3. Send message from `overrich` to `unrosed` and `addleness`
    1. Under `client-overrich`, run `./sendmsg unrosed addleness test.txt`
    2. Under `client-unrosed`, run `./recvmsg`
