@@ -151,7 +151,7 @@ int main(int argc, const char * argv[]){
     ofstream out("tmp/cert_msg", ofstream::binary);
     string subname = exec("openssl x509 -noout -subject -in client_files/cert.pem");
     string sendername = subname.substr(subname.rfind(" ") + 1);
-    out << cert.rdbuf() << endl << "From: " << sendername << " " <<  msg.rdbuf();
+    out << cert.rdbuf() << endl << "From: " << sendername << endl <<  msg.rdbuf();
     msg.close();
     cert.close();
     out.close();
