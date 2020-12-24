@@ -23,7 +23,8 @@ Note: the `CAserver/config`, `server/config` and `client/config` files contain t
 numbers that each component hosts on and/or connects to. The current configurations allow three components
 to run on one VM. If need to run on separate VMs, it is necessary to change the configuration files with
 appropriate ip addresses and port numbers, and the ip/port for the same component in different files
-must match.
+must match. Once the project is compiled, three components: "`client/`", "`server/`", "`CAserver` and `ca`"
+can be moved to different VMs.
 
 ### required packages
 
