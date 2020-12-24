@@ -49,6 +49,33 @@ The login logic of users using its client certificate:
 - The server encrypts a random number using the public key obtained from the cert and sends it to the user to confirm that the user is the one who actually holds the certificate.
 - Only those with the corresponding private key could decrypt the number correctly, which means the user could verify its authenticity by sending the correct original random number to the server.
 
+### detailed steps
+1. `sendmsg`
+- The client (sender) sends its certificate, a list of recipient names, and a message to the server.
+- The server verifies the sender's certificate using the ca's certificate, then uses the public key derived from - the sender's certificate to encrypt a random number r and send the encrypted random number e(r) to the sender.
+- The sender uses its private key to decrypt e(r), send r to the server.
+- The server checks if the random number received matches the one it sent before, sends all the recipient's certificates to the sender.
+- For each recipient, the sender use the recipient's public key from the certificate to encrypt a symmetric key, sends (a) encrypted key (b) [id | encrypt(cert | msg)] (c) sign( [id | encrypt(cert | msg)] ) 3 components to the mail server.
+
+2. `recvmsg`
+- The client (recipient) sends its certificate to the server.
+- The server verifies the recipient certificate using the ca's certificate and then checks if the certificate matches the one stored on the server.
+- "Random number identity verification"
+- The server sends the message package to the recipient
+- The recipient uses its private key to decrypt the symmetric key, checks the message's id, decrypt the message using the symmetric key, checks the sender's certificate, and check the signature using the sender's public key.
+
+3. `getcert`
+- The client generates a CSR, sends username, password, and CSR to the server.
+- The server checks if the user's mailbox is empty, then forwards username, password, and CSR to CAserver.
+- The CA server checks the user-password database; if it matches, it sends the user's certificate to the server; otherwise, it sends back an error code.
+- The server gets the CA server's response, updates its certificate database, and sends the certificate to the user.
+
+4. `changepw`
+- The client sends the username, old password, and new password to the server.
+- The server checks if the user's mailbox is empty, then forwards username, old password, and new CSR to CAserver.
+- CA server checks and updates its user-password database, generates a new certificate and responds to the server.
+- The server gets the CA server's response, updates its certificate database, and sends the new certificate to the user.
+
 ## File layout
 
 ## File permission decisions
