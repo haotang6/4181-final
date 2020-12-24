@@ -145,31 +145,43 @@ ensure that on the VM which the CA is hosted on,  only the CA server application
 the password database.
 
 ## Testing
-### 1. all good
+
 1. Under `CAserver` folder
    1. Run `./CAserver`
 2. Under `server` folder, 
    1. Run `./server`
-3. Install 3 clients: overrich, unrosed and addleness
-4. Generate certificates for the two users:
+   
+### 1. all good
+
+1. Install 3 clients: overrich, unrosed and addleness
+2. Generate certificates for the two users:
    1. Under `client-overrich`, run `./getcert overrich Freemasonry_bruskest`
       1. Test  `changepw`: run `./changepw overrich Freemasonry_bruskest 123`
    2. Under `client-unrosed`, run `./getcert unrosed shamed_Dow`
    3. Under `client-addleness`, run `./getcert unrosed Cardin_pwns`
-5. Send message from `overrich` to `unrosed`
+3. Send message from `overrich` to `unrosed` and `addleness`
    1. Under `client-overrich`, run `./sendmsg unrosed addleness test.txt`
    2. Under `client-unrosed`, run `./recvmsg`
-   3. Under `client-addleness`, run `recvmsg`
+   3. Under `client-addleness`, run `./recvmsg`
 
 ### 2. wrong password
-Under `client-addleness`, run `./getcert unrosed <wrong password>`
+1. Install a client for `addleness`
+2. Under `client-addleness`, run `./getcert unrosed <wrong password>`
 
 ### 3. getcert and changepw with not empty mailbox
-1. getcert for overrich and unrosed
-2. overrich sends a message to unrosed
-3. run getcert and changepw under unrosed
-4. unrosed cannot get a new certificate or change its password
+1. Install two clients for `overrich` and `unrosed`
+2. `getcert` for `overrich` and `unrosed`
+3. `overrich` sends a message to `unrosed`
+4. run `getcert` and `changepw` under `unrosed`
+5. `unrosed` cannot get a new certificate or change its password
 
 ### 4. one of the recipients doesn't have a certificate
+1. Install 3 clients: overrich, unrosed and addleness
+2. Generate certificates for the overrich and unrosed
+3. Send message from `overrich` to `unrosed` and `addleness`
+   1. Under `client-overrich`, run `./sendmsg unrosed addleness test.txt`
+   2. Under `client-unrosed`, run `./recvmsg`
+4. `addleness` can still `getcert` and `changepw`. Its mailbox on the server is empty
+
 
 
