@@ -6,6 +6,8 @@ Yuan Xu (yx2537@columbia.edu)
 
 ## Install
 
+### install the project
+
 1. Setting up the ca: run `./setupca.sh`
 2. Under `CAserver` folder
    1. Run `./setcaserverkeypair.sh`
@@ -22,6 +24,17 @@ numbers that each component hosts on and/or connects to. The current configurati
 to run on one VM. If need to run on separate VMs, it is necessary to change the configuration files with
 appropriate ip addresses and port numbers, and the ip/port for the same component in different files
 must match.
+
+### required packages
+
+The following commands can install required packages for the project that are not included in the
+default Google Cloud VM.
+
+```
+sudo apt-get install build-essential
+sudo apt-get install -y libssl-dev
+sudo apt install whois
+```
 
 ## Design
 
